@@ -1,0 +1,15 @@
+# Byte-compiled files
+__pycache__/
+*.pyc
+
+# Virtual environment
+venv/
+
+# VS Code settings
+.vscode/
+
+# Other temporary files
+*.log
+
+# Ignore test.py
+test.py
