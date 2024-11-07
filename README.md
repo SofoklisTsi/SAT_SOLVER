@@ -18,6 +18,8 @@ SAT SOLVER
 - **Logging and Decision Table**: Logs each decision step, including decision literals, implied literals, satisfied/contradicted clauses, and explanations.
 - **Configurable Options**: Includes settings for using or skipping pure literal elimination.
 - **Unit Tests**: Basic tests for the solver using `test_dpll_solver.py`.
+- **Literal Count Heuristics (Phase 2.1)**: Adds multiple branching heuristics (DLCS, DLIS, RDLCS, RDLIS) that use literal counts to guide decision-making.
+- **Clause Elimination Preparation (Phase 2.1)**: Moved `pure_literal_elimination` to a dedicated `clause_elimination_methods.py` module, paving the way for additional clause elimination techniques in future phases.
 
 ## Requirements
 

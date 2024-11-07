@@ -1,4 +1,6 @@
 from sat_problem import SATProblem
+from literal_count_branching_heuristics import dlcs, dlis, rdlcs, rdlis, default_heuristic
+from clause_elimination_methods import pure_literal_elimination
 
 class DPLLSolver:
     """
@@ -9,6 +11,8 @@ class DPLLSolver:
         use_pure_literal (bool): Whether to use pure literal elimination.
         steps (list of dict): A list of dictionaries to log the steps of the solving process.
         decision_level (int): The current decision depth level.
+        heuristic (function): The branching heuristic function used to select decision literals,
+            based on the selected heuristic strategy (default, dlcs, dlis, rdlcs, or rdlis).
     
     Methods:
         unit_propagation(): Perform unit propagation on the current formula.
@@ -21,13 +25,16 @@ class DPLLSolver:
         get_decision_steps(): Retrieve the logged decision steps.
     """
 
-    def __init__(self, problem, use_pure_literal=False):
+    def __init__(self, problem, use_pure_literal=False, heuristic='default'):
         """
         Initialize the solver with a SATProblem instance.
 
         Args:
             problem (SATProblem): The SAT problem to be solved.
             use_pure_literal (bool): Whether to use pure literal elimination.
+                Defaults to False.
+            heuristic (str): The branching heuristic to use for selecting decision literals.
+                Options are 'default', 'dlcs', 'dlis', 'rdlcs', or 'rdlis'. Defaults to 'default'.
 
         Raises:
             TypeError: If `problem` is not an instance of SATProblem.
@@ -38,11 +45,22 @@ class DPLLSolver:
         self.use_pure_literal = use_pure_literal
         self.steps = []  # Initialize an empty list for logging steps
         self.decision_level = 0  # Track the decision depth level
+
+        # Map heuristic names to functions
+        self.heuristics = {
+            'default': default_heuristic,
+            'dlcs': dlcs,
+            'dlis': dlis,
+            'rdlcs': rdlcs,
+            'rdlis': rdlis
+        }
+        self.heuristic = self.heuristics.get(heuristic, default_heuristic)
     
     def unit_propagation(self):
         """
         Perform unit propagation: If a clause becomes a unit clause (only one literal unassigned),
-        assign that literal accordingly.
+        assign that literal accordingly. 
+        Also referred to as Boolean Constraint Propagation (BCP).
         
         Returns:
             tuple: (bool, int, int) - True if no conflicts, False if conflict occurred, 
@@ -58,45 +76,6 @@ class DPLLSolver:
                 self.problem.update_satisfaction_map()
                 return True, unit_literal, i
         return False, None, None  # No unit clause found
-
-    def pure_literal_elimination(self):
-        """
-        Perform pure literal elimination: If a literal appears only as positive or negative in the formula,
-        assign it accordingly. For all pure literals.
-
-        Returns:
-            tuple: (bool, list) - True if any pure literals were eliminated, and a list of affected literals.
-        """
-        # Track if any changes occurred and the affected literals
-        changed = False
-        affected_literals = []
-
-        # Gather all literals by their polarities
-        literal_counts = {}
-        
-        for i, clause in enumerate(self.problem.clauses):
-            if self.problem.satisfaction_map[i]:
-                continue  # Skip already satisfied clauses
-
-            for lit in clause:
-                var = abs(lit)
-                if var not in literal_counts:
-                    literal_counts[var] = {1: 0, -1: 0}
-                literal_counts[var][1 if lit > 0 else -1] += 1
-
-        # Assign pure literals and update satisfaction
-        for var, count in literal_counts.items():
-            if count[1] > 0 and count[-1] == 0:
-                # Pure positive literal
-                self.problem.assignments[var] = True
-                changed = True
-                affected_literals.append(var)
-            elif count[-1] > 0 and count[1] == 0:
-                # Pure negative literal
-                self.problem.assignments[var] = False
-                changed = True
-                affected_literals.append(-var)
-        return changed, affected_literals
 
     def choose_literal(self):
         """
@@ -179,28 +158,24 @@ class DPLLSolver:
                     del self.problem.assignments[abs(lit)]
                 return False
 
-        # Choose a literal for branching and increment decision level
-        unassigned_literals = [lit for i, clause in enumerate(self.problem.clauses) for lit in clause if abs(lit) not in self.problem.assignments
-                               and not self.problem.satisfaction_map[i]]
-        if not unassigned_literals:
+        # Call the heuristic function to choose the decision literal and increment the decision level
+        decision_literal = self.heuristic(self.problem)
+        if not decision_literal:
             return self.problem.is_satisfied()
-
-        # Increment decision level and assign the decision literal
-        decision_literal = unassigned_literals[0]
         var = abs(decision_literal)
         self.decision_level += 1  # Increment decision level
 
         # Try assigning True to the literal
-        self.problem.assignments[var] = True
+        self.problem.assignments[var] = True if decision_literal > 0 else False
         self.problem.update_satisfaction_map()
-        self.log_step(decision_literal=(var), explanation="INC_DL")
+        self.log_step(decision_literal=(var), explanation="INC_DL " + self.heuristic.__name__)
         if self.dpll_recursive_with_logging():
             return True
 
         # Backtrack and try assigning False
-        self.problem.assignments[var] = False
+        self.problem.assignments[var] = False if decision_literal > 0 else True
         self.problem.update_satisfaction_map()
-        self.log_step(decision_literal=(-var), explanation="INC_DL")
+        self.log_step(decision_literal=(-var), explanation="INC_DL " + self.heuristic.__name__)
         if self.dpll_recursive_with_logging():
             return True
 
@@ -221,7 +196,7 @@ class DPLLSolver:
         """
         if self.use_pure_literal:
             while True:
-                elimination_occurred, affected_literals = self.pure_literal_elimination()
+                elimination_occurred, affected_literals = pure_literal_elimination(self.problem)
                 if not elimination_occurred:
                     break
                 self.problem.update_satisfaction_map()
