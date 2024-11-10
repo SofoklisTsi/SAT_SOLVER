@@ -1,5 +1,6 @@
 from sat_problem import SATProblem
 from literal_count_branching_heuristics import dlcs, dlis, rdlcs, rdlis, default_heuristic
+from moms_branching_heuristics import moms, rmoms
 from clause_elimination_methods import pure_literal_elimination
 
 class DPLLSolver:
@@ -12,7 +13,9 @@ class DPLLSolver:
         steps (list of dict): A list of dictionaries to log the steps of the solving process.
         decision_level (int): The current decision depth level.
         heuristic (function): The branching heuristic function used to select decision literals,
-            based on the selected heuristic strategy (default, dlcs, dlis, rdlcs, or rdlis).
+            based on the selected heuristic strategy (default, dlcs, dlis, rdlcs, rdlis, moms or rmoms).
+        heuristic_name (str): The name of the current heuristic.
+        k (int): The value of k for the MOM's heuristic.
     
     Methods:
         unit_propagation(): Perform unit propagation on the current formula.
@@ -25,7 +28,7 @@ class DPLLSolver:
         get_decision_steps(): Retrieve the logged decision steps.
     """
 
-    def __init__(self, problem, use_pure_literal=False, heuristic='default'):
+    def __init__(self, problem, use_pure_literal=False, heuristic='default', k=0):
         """
         Initialize the solver with a SATProblem instance.
 
@@ -34,7 +37,9 @@ class DPLLSolver:
             use_pure_literal (bool): Whether to use pure literal elimination.
                 Defaults to False.
             heuristic (str): The branching heuristic to use for selecting decision literals.
-                Options are 'default', 'dlcs', 'dlis', 'rdlcs', or 'rdlis'. Defaults to 'default'.
+                Options are 'default', 'dlcs', 'dlis', 'rdlcs', 'rdlis', 'moms', or 'rmoms'.
+                Defaults to 'default'.
+            k (int): The value of k for the MOM's heuristic. Defaults to 0.
 
         Raises:
             TypeError: If `problem` is not an instance of SATProblem.
@@ -43,6 +48,8 @@ class DPLLSolver:
             raise TypeError("problem must be an instance of SATProblem")
         self.problem = problem
         self.use_pure_literal = use_pure_literal
+        self.k = k
+
         self.steps = []  # Initialize an empty list for logging steps
         self.decision_level = 0  # Track the decision depth level
 
@@ -52,9 +59,15 @@ class DPLLSolver:
             'dlcs': dlcs,
             'dlis': dlis,
             'rdlcs': rdlcs,
-            'rdlis': rdlis
+            'rdlis': rdlis,
+            'moms': lambda problem: moms(problem, k=self.k),
+            'rmoms': lambda problem: rmoms(problem, k=self.k)
         }
         self.heuristic = self.heuristics.get(heuristic, default_heuristic)
+        if self.heuristic != default_heuristic:
+            self.heuristic_name = heuristic
+        else:
+            self.heuristic_name = 'default'
     
     def unit_propagation(self):
         """
@@ -168,14 +181,14 @@ class DPLLSolver:
         # Try assigning True to the literal
         self.problem.assignments[var] = True if decision_literal > 0 else False
         self.problem.update_satisfaction_map()
-        self.log_step(decision_literal=(var), explanation="INC_DL " + self.heuristic.__name__)
+        self.log_step(decision_literal=(var), explanation="INC_DL " + self.heuristic_name)
         if self.dpll_recursive_with_logging():
             return True
 
         # Backtrack and try assigning False
         self.problem.assignments[var] = False if decision_literal > 0 else True
         self.problem.update_satisfaction_map()
-        self.log_step(decision_literal=(-var), explanation="INC_DL " + self.heuristic.__name__)
+        self.log_step(decision_literal=(-var), explanation="INC_DL " + self.heuristic_name)
         if self.dpll_recursive_with_logging():
             return True
 

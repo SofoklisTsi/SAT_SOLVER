@@ -1,6 +1,7 @@
 from dpll_solver import SATProblem, DPLLSolver
 from literal_count_branching_heuristics import dlcs, dlis, rdlis, rdlcs, default_heuristic
 from clause_elimination_methods import pure_literal_elimination
+from moms_branching_heuristics import moms, rmoms, _count_occurrences_in_smallest_clauses
 
 # TEST DPLL SOLVE WITH LOGGING ENABLED
 
@@ -88,9 +89,11 @@ clauses_test_branching_heuristics = [
 
 # Initialize SATProblem with the clauses
 problem = SATProblem(clauses_test_branching_heuristics)
+_count_occurrences_in_smallest_clauses(problem)
+# Initialize DPLLSolver with the problem without pure literal elimination
+solver = DPLLSolver(problem, heuristic='dlcskjl')
+_count_occurrences_in_smallest_clauses(problem)
 
-# Initialize DPLLSolver with the problem and disable pure literal elimination
-solver = DPLLSolver(problem, use_pure_literal=True)
 
 # Solve the problem.
 is_satisfiable = solver.solve() # Enable this line to test the solver
