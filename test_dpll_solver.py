@@ -79,11 +79,15 @@ clauses_test_branching_heuristics = [
     [4, 3],
     [1, -3],
     [-1, -2, -3, -4],
-    [3, 4, -2],
+    [3, -2, 4], # as it tries to change the twl, it will encounter 4 and map the clause to satisfied
     [4, -3],
     [1, 3, 2, -4],
     [4, 1, -2],
-    # [4, 1, -2, -3],
+    # [], # enable to test empty clause
+    [-4, -1, -2, -3], # keep to test two watched literals
+    [-4, -1, -2, 3], # keep to test two watched literals
+    [-4, -1, 2, 3], # keep to test two watched literals
+    [-4, -1, 2, -3], # keep to test two watched literals
     [-1, 4, 2, -3]
 ]
 
@@ -91,7 +95,7 @@ clauses_test_branching_heuristics = [
 problem = SATProblem(clauses_test_branching_heuristics)
 _count_occurrences_in_smallest_clauses(problem)
 # Initialize DPLLSolver with the problem without pure literal elimination
-solver = DPLLSolver(problem, heuristic='dlcskjl')
+solver = DPLLSolver(problem, heuristic='dlcskjl', twl=True)
 _count_occurrences_in_smallest_clauses(problem)
 
 

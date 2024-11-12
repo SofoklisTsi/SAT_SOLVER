@@ -10,6 +10,7 @@ SAT SOLVER
 ├── clause_elimination_methods.py # Clause elimination techniques, e.g., pure literal elimination 
 ├── literal_count_branching_heuristics.py # Literal count heuristics (DLCS, DLIS, RDLCS, RDLIS) 
 ├── moms_branching_heuristics.py # MOM’s and RMOM’s heuristics
+├── twl_sat_problem.py # Two Watched Literals (TWL) SAT problem representation
 ├── pdf_clauses_and_results.txt # Input file for testing 
 ├── test_dpll_solver.py # Unit tests for DPLL solver 
 └── README.md # Project documentation
@@ -32,6 +33,11 @@ SAT SOLVER
 - **MOM's Heuristic**: Implements the Maximum Occurrences on clauses of Minimum size (MOM's) heuristic, which selects literals based on their frequency in the smallest unsatisfied clauses. MOM's heuristic uses a formula to prioritize literals that occur frequently, controlled by the parameter `k`.
 - **RMOM's Heuristic**: Randomized version of MOM's, assigning a randomly chosen truth value (True/False) to the selected literal.
 - **Flexible `k` Parameter**: Allows the user to adjust the sensitivity of MOM's heuristic through the `k` parameter, which influences literal selection. 
+
+### Phase 3.0: Two Watched Literals (TWL) Optimization
+
+- **Two Watched Literals**: Implements the Two Watched Literals optimization to improve unit propagation efficiency. By monitoring only two literals in each clause, this approach minimizes the number of literals checked at each decision level, making the solver more efficient for larger problems.
+- **Integration with DPLL**: When twl=True is enabled, the solver converts the SAT problem instance to use the Two Watched Literals technique, making it compatible with the existing DPLL logic.
 
 ## Requirements
 
@@ -63,7 +69,7 @@ SAT SOLVER
 
     clauses = [[1, -3], [-2, 3], [2, 4], [-4]]  # Example problem
     problem = SATProblem(clauses)
-    solver = DPLLSolver(problem, use_pure_literal=True, heuristic='moms', k=2)
+    solver = DPLLSolver(problem, use_pure_literal=True, heuristic='moms', k=2, twl=True)
 
     is_satisfiable = solver.solve()
     print("Satisfiable:", is_satisfiable)
@@ -79,7 +85,10 @@ SAT SOLVER
    - `'moms'`: MOM’s heuristic, with configurable `k` (e.g., `heuristic='moms', k=2`).
    - `'rmoms'`: RMOM’s heuristic, which randomizes the truth value of the selected literal (e.g., `heuristic='rmoms', k=2`).
 
-3. **Testing**:
+3. **Two Watched Literals (TWL)**:
+    To enable Two Watched Literals, pass twl=True when initializing DPLLSolver.
+
+4. **Testing**:
    Run tests to verify the solver works correctly:
    ```bash
    python test_dpll_solver.py

@@ -2,6 +2,7 @@ from sat_problem import SATProblem
 from literal_count_branching_heuristics import dlcs, dlis, rdlcs, rdlis, default_heuristic
 from moms_branching_heuristics import moms, rmoms
 from clause_elimination_methods import pure_literal_elimination
+from twl_sat_problem import TWLSATProblem
 
 class DPLLSolver:
     """
@@ -16,10 +17,10 @@ class DPLLSolver:
             based on the selected heuristic strategy (default, dlcs, dlis, rdlcs, rdlis, moms or rmoms).
         heuristic_name (str): The name of the current heuristic.
         k (int): The value of k for the MOM's heuristic.
+        twl (bool): Whether to use Two Watched Literals optimization.
     
     Methods:
         unit_propagation(): Perform unit propagation on the current formula.
-        pure_literal_elimination(): Perform pure literal elimination on the current formula.
         choose_literal(): Choose a literal for branching.
         log_step(): Log the current state in the DPLL decision process.
         dpll_recursive_with_logging(): Recursive DPLL algorithm with logging at each step.
@@ -28,7 +29,7 @@ class DPLLSolver:
         get_decision_steps(): Retrieve the logged decision steps.
     """
 
-    def __init__(self, problem, use_pure_literal=False, heuristic='default', k=0):
+    def __init__(self, problem, use_pure_literal=False, heuristic='default', k=0, twl=False):
         """
         Initialize the solver with a SATProblem instance.
 
@@ -40,15 +41,17 @@ class DPLLSolver:
                 Options are 'default', 'dlcs', 'dlis', 'rdlcs', 'rdlis', 'moms', or 'rmoms'.
                 Defaults to 'default'.
             k (int): The value of k for the MOM's heuristic. Defaults to 0.
+            twl (bool): Whether to use Two Watched Literals optimization. Defaults to False.
 
         Raises:
             TypeError: If `problem` is not an instance of SATProblem.
         """
         if not isinstance(problem, SATProblem):
-            raise TypeError("problem must be an instance of SATProblem")
+            raise TypeError("Problem must be an instance of SATProblem")
         self.problem = problem
         self.use_pure_literal = use_pure_literal
         self.k = k
+        self.twl = twl
 
         self.steps = []  # Initialize an empty list for logging steps
         self.decision_level = 0  # Track the decision depth level
@@ -68,6 +71,8 @@ class DPLLSolver:
             self.heuristic_name = heuristic
         else:
             self.heuristic_name = 'default'
+        if self.twl:
+            self.heuristic_name += ' twl'
     
     def unit_propagation(self):
         """
@@ -163,6 +168,8 @@ class DPLLSolver:
                 break
             propagated_literals.append(implied_literal)  # Track each implied literal
             self.log_step(implied_literal=implied_literal, explanation="BCP " + str(affected_clause))
+            if self.twl:
+                self.problem.update_watched_literals(implied_literal)
             if self.problem.is_satisfied():
                 return True
             if self.problem.is_unsatisfiable():
@@ -181,6 +188,8 @@ class DPLLSolver:
         # Try assigning True to the literal
         self.problem.assignments[var] = True if decision_literal > 0 else False
         self.problem.update_satisfaction_map()
+        if self.twl:
+            self.problem.update_watched_literals(decision_literal)
         self.log_step(decision_literal=(var), explanation="INC_DL " + self.heuristic_name)
         if self.dpll_recursive_with_logging():
             return True
@@ -188,6 +197,8 @@ class DPLLSolver:
         # Backtrack and try assigning False
         self.problem.assignments[var] = False if decision_literal > 0 else True
         self.problem.update_satisfaction_map()
+        if self.twl:
+            self.problem.update_watched_literals(-decision_literal)
         self.log_step(decision_literal=(-var), explanation="INC_DL " + self.heuristic_name)
         if self.dpll_recursive_with_logging():
             return True
@@ -204,6 +215,12 @@ class DPLLSolver:
         """
         Solve the SAT problem using the DPLL algorithm.
 
+        If pure literal elimination is enabled, the solver will first attempt to simplify 
+        the problem by eliminating clauses with pure literals. 
+        
+        If the Two-Watched Literals (TWL) optimization is enabled, it converts the problem 
+        instance to use watched literals before beginning the recursive DPLL solving process.
+
         Returns:
             bool: Satisfiability result (True if satisfiable, False otherwise).
         """
@@ -214,6 +231,9 @@ class DPLLSolver:
                     break
                 self.problem.update_satisfaction_map()
                 self.log_step(explanation="PLE " + ", ".join(str(lit) for lit in affected_literals))
+
+        if self.twl:
+            self.problem = TWLSATProblem(self.problem)
 
         satisfiable = self.dpll_recursive_with_logging()
         return satisfiable
