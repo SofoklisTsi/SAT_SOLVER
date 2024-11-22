@@ -24,7 +24,7 @@ SAT_SOLVER/
 │   │   │   └── TESTS_Results/      # Testing results.
 │   │   ├── PDFS/                   # SAT problem files in CNF format from the university's PDFs.
 │   │   └── TESTS/                  # Test files created to test different aspects of the project.
-│   ├── SATLIB/                     # Standard SAT problem instances from https://www.cs.ubc.ca/~hoos/SATLIB/benchm.html.
+│   ├── SATLIB/                     # Standard SAT problem instances from [SATLIB](https://www.cs.ubc.ca/~hoos/SATLIB/benchm.html).
 │   │   ├── uf100-430/              
 │   │   ├── uf125-538/              # Each folder contains 10 .cnf problems.
 │   │   ├── uf150-645/
@@ -137,4 +137,4 @@ SAT_SOLVER/
    ```
 
 ## Acknowledgements
-A special thanks to the creator of the Folder Mapper VSCode Extension. This extension has been incredibly helpful in organizing and visualizing the project structure, as well as in explaining it to AI tools. https://github.com/m0n0t0ny/Folder-Mapper-VSCode-Extension
+A special thanks to the creator of the [Folder Mapper VSCode Extension](https://github.com/m0n0t0ny/Folder-Mapper-VSCode-Extension). This extension has been incredibly helpful in organizing and visualizing the project structure, as well as in explaining it to AI tools.
