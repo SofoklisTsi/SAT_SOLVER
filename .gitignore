@@ -13,3 +13,6 @@ venv/
 
 # Ignore test.py
 test.py
+
+# Ignore the profile file
+profile_output.prof

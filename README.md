@@ -4,16 +4,40 @@ This project is an implementation of a SAT (Boolean Satisfiability) solver using
 
 ## Project Structure
 
-SAT SOLVER 
-├── dpll_solver.py # DPLL algorithm implementation 
-├── sat_problem.py # SAT problem representation 
-├── clause_elimination_methods.py # Clause elimination techniques, e.g., pure literal elimination 
-├── literal_count_branching_heuristics.py # Literal count heuristics (DLCS, DLIS, RDLCS, RDLIS) 
-├── moms_branching_heuristics.py # MOM’s and RMOM’s heuristics
-├── twl_sat_problem.py # Two Watched Literals (TWL) SAT problem representation
-├── pdf_clauses_and_results.txt # Input file for testing 
-├── test_dpll_solver.py # Unit tests for DPLL solver 
-└── README.md # Project documentation
+SAT_SOLVER/
+├── Solver/
+│   ├── dpll_solver.py                # DPLL algorithm implementation.
+├── SATProblems/
+│   ├── sat_problem.py                # SAT problem representation.
+│   ├── twl_sat_problem.py            # Two Watched Literals (TWL) SAT problem representation.
+├── Clause_Elimination_Methods/
+│   └── clause_elimination_methods.py  # Clause elimination techniques (e.g., pure literal elimination).
+├── Heuristics/
+│   ├── literal_count_branching_heuristics.py  # Literal count heuristics (Default, DLCS, DLIS, RDLCS, RDLIS).
+│   └── moms_branching_heuristics.py           # MOM’s and RMOM’s heuristics.
+├── DIMACS_Reader/
+│   └── clause_reader.py             # Logic for reading DIMACS CNF files.
+├── DATA/
+│   ├── Clauses_Files/
+│   │   ├── Clauses_Files_Results/
+│   │   │   ├── PDFS_Results/       # Results for the pdf problems.
+│   │   │   └── TESTS_Results/      # Testing results.
+│   │   ├── PDFS/                   # SAT problem files in CNF format from the university's PDFs.
+│   │   └── TESTS/                  # Test files created to test different aspects of the project.
+│   ├── SATLIB/                     # Standard SAT problem instances from https://www.cs.ubc.ca/~hoos/SATLIB/benchm.html.
+│   │   ├── uf100-430/              
+│   │   ├── uf125-538/              # Each folder contains 10 .cnf problems.
+│   │   ├── uf150-645/
+│   │   ├── uf20-91/
+│   │   ├── uf250-1065/
+│   │   └── uf75-325/
+├── Testers/
+│   ├── profile_output.prof          # Profiling output that will be created by test_SATLIB.py.
+│   ├── test_dpll_solver.py          # Unit tests for DPLL solver.
+│   ├── test_SATLIB.py               # Unit tests for SATLIB instances and Profiling.
+│   └── version_tester.py            # Version testing to ensure the functionality of the Solver after each change.
+├── .gitignore                       # Git ignore configuration.
+└── README.md                        # Project documentation. This very file!
 
 
 ## Features
@@ -39,6 +63,14 @@ SAT SOLVER
 - **Two Watched Literals**: Implements the Two Watched Literals optimization to improve unit propagation efficiency. By monitoring only two literals in each clause, this approach minimizes the number of literals checked at each decision level, making the solver more efficient for larger problems.
 - **Integration with DPLL**: When twl=True is enabled, the solver converts the SAT problem instance to use the Two Watched Literals technique, making it compatible with the existing DPLL logic.
 
+### Phase 3.1: DIMACS Clause Form Compatibility and Code Refactoring
+
+- **DIMACS Reader**: A class that processes DIMACS .cnf files, extracting the problem's clauses, the number of literals, and the number of clauses for use in the solver.
+- **Performance Testing**: Utilized cProfile and SnakeViz to benchmark the solver's performance with various SATLIB problem instances. This phase helped identify performance bottlenecks and areas for optimization.
+- **Code Refactoring**: Following the performance analysis, significant changes were made to the codebase to optimize the solver's efficiency. While these improvements enhanced performance, they resulted in a decrease in code readability. 
+- **Enhanced Project Structure**: As the project expanded, the code was reorganized into dedicated directories and modules to maintain clarity and manageability. This restructuring ensures easier navigation and scalability for future development.
+- **Decision Literal Bug Fixed**: A bug was identified where the decision literal printed in the 'decision literal' column of the 'steps' log had incorrect polarity when heuristics other than the 'default' were used. This issue has now been resolved.
+
 ## Requirements
 
 - Python 3.6 or higher
@@ -58,14 +90,17 @@ SAT SOLVER
     source venv/bin/activate  # On Windows: venv\Scripts\activate
     ```
 
-3. Install dependencies if any (e.g., if you add any for testing).
+3. Install dependencies (for performance testing):
+    ```bash
+    pip install snakeviz
+    ```
 
 ## Usage
 
 1. To solve a SAT problem:
     ```python
-    from sat_problem import SATProblem
-    from dpll_solver import DPLLSolver
+    from SATPRoblems.sat_problem import SATProblem
+    from Solver.dpll_solver import DPLLSolver
 
     clauses = [[1, -3], [-2, 3], [2, 4], [-4]]  # Example problem
     problem = SATProblem(clauses)
@@ -91,5 +126,15 @@ SAT SOLVER
 4. **Testing**:
    Run tests to verify the solver works correctly:
    ```bash
-   python test_dpll_solver.py
+   python testers/version_tester.py
    ```
+
+5. **Performance Testing**:
+   To test the solver's performance, use the test_SATLIB.py script. This will profile the solver's execution using cProfile, which can then be visualized with SnakeViz. To do so, run the following commands:
+   ```bash
+    python testers/test_SATLIB.py
+    snakeviz testers/profile_output.prof  # This opens a visualization of the profiling data
+   ```
+
+## Acknowledgements
+A special thanks to the creator of the Folder Mapper VSCode Extension. This extension has been incredibly helpful in organizing and visualizing the project structure, as well as in explaining it to AI tools. https://github.com/m0n0t0ny/Folder-Mapper-VSCode-Extension

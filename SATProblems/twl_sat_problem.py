@@ -1,17 +1,25 @@
-from sat_problem import SATProblem
+from SATProblems.sat_problem import SATProblem
 
 class TWLSATProblem(SATProblem):
     """
     Extended SATProblem class that incorporates the Two Watched Literals (TWL) technique.
 
     Attributes:
-        original_clauses (List[List[int]]): The original SAT clauses.
-        The rest of the attributes are inherited from the SATProblem class.
+        original_clauses (List[List[int]]): The original SAT clauses, unchanged throughout execution.
+
+    Inherited Attributes from SATProblem:
+        clauses (List[List[int]]): Modified clauses where two watched literals are tracked per clause.
+        clauses_by_literal (Dict[int, List[int]]): Mapping of literals to the indices of clauses where they appear.
+        num_of_assigned_literals_that_satisfy_a_clause (List[int]): Tracks the count of assigned literals
+            satisfying each clause.
+        assignments (Dict[int, bool]): Current variable assignments.
+        satisfaction_map (List[bool]): Indicates whether each clause is currently satisfied.
     
     Methods:
-        _initialize_watched_literals(): Sets up two watched literals for each clause.
-        update_watched_literals(): Updates watched literals when a literal's assignment changes.
-        The rest of the methods are inherited from the SATProblem class.
+        _initialize_watched_literals(satisfaction_map, assignments):
+            Initializes two watched literals for each clause.
+        update_watched_literals(assigned_literal):
+            Updates the watched literals when a literal's assignment changes.
     """
 
     def __init__(self, sat_problem_instance):
@@ -28,14 +36,16 @@ class TWLSATProblem(SATProblem):
         if not isinstance(sat_problem_instance, SATProblem):
             raise TypeError("Problem must be an instance of SATProblem")
         self.original_clauses = sat_problem_instance.clauses
-        clauses_with_twl = self._initialize_watched_literals(sat_problem_instance.satisfaction_map, sat_problem_instance.assignments)
-        super().__init__(clauses_with_twl)
+        self.clauses = self._initialize_watched_literals(sat_problem_instance.satisfaction_map, sat_problem_instance.assignments)
+        self.clauses_by_literal = self.clauses_by_literal = sat_problem_instance.clauses_by_literal
+        self.num_of_assigned_literals_that_satisfy_a_clause = sat_problem_instance.num_of_assigned_literals_that_satisfy_a_clause
         self.assignments = sat_problem_instance.assignments
         self.satisfaction_map = sat_problem_instance.satisfaction_map
 
     def _initialize_watched_literals(self, satisfaction_map, assignments):
         """
-        Initialize watched literals for each clause.
+        Initializes two watched literals for each clause. If a clause is satisfied, it remains unchanged.
+        Otherwise, selects up to two unassigned literals in the clause as watched literals.
 
         Args:
             satisfaction_map (List[bool]): Indicates if each clause is currently satisfied.
@@ -53,8 +63,7 @@ class TWLSATProblem(SATProblem):
                 # If the clause is satisfied, add the original clause to clauses_with_twl
                 clauses_with_twl.append(clause)
             else:
-                # Watch the first two literals in each clause by default
-                # Collect up to two unassigned literals in the clause
+                # Select up to two unassigned literals to watch.
                 watched_literals = []
                 for lit in clause:
                     if abs(lit) not in assignments:
@@ -68,15 +77,16 @@ class TWLSATProblem(SATProblem):
     
     def update_watched_literals(self, assigned_literal):
         """
-        Updates watched literals when an assignment is made. 
-        If a watched literal in a clause becomes false, tries to find an alternative literal 
-        in the clause to watch.
+        Updates watched literals when a literal is assigned. If a watched literal becomes false,
+        tries to find an alternative literal in the clause to watch. If no alternative is found,
+        ensures that the clause has exactly two literals (unless it’s a unit clause).
 
         Args:
             assigned_literal (int): The literal that has been assigned a value.
 
         Raises:
-            ValueError: If a clause (that was not unit clause before) does not have exactly two literals after updating.
+            ValueError: If a clause (that was not a unit clause before) does not have exactly
+                two literals after updating.
         """
         for i, clause in enumerate(self.clauses):
             if self.satisfaction_map[i]:

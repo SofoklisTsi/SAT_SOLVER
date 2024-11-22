@@ -1,0 +1,119 @@
+{
+    "heuristic": "default",
+    "steps": [
+        {
+            "Decision Level": 1,
+            "Partial Assignment": "{1}",
+            "Decision Literal": 1,
+            "Implied Literal": null,
+            "Satisfied Clauses": [0],
+            "Contradicted Clauses": [],
+            "Unit Clauses": [],
+            "Pending Clauses": [1],
+            "Explanation": "INC_DL default"
+        },
+        {
+            "Decision Level": 2,
+            "Partial Assignment": "{1, 2}",
+            "Decision Literal": 2,
+            "Implied Literal": null,
+            "Satisfied Clauses": [0],
+            "Contradicted Clauses": [],
+            "Unit Clauses": [1],
+            "Pending Clauses": [],
+            "Explanation": "INC_DL default"
+        },
+        {
+            "Decision Level": 2,
+            "Partial Assignment": "{1, 2, -3}",
+            "Decision Literal": null,
+            "Implied Literal": -3,
+            "Satisfied Clauses": [0, 1],
+            "Contradicted Clauses": [],
+            "Unit Clauses": [],
+            "Pending Clauses": [],
+            "Explanation": "BCP 1"
+        }
+    ]
+}
+{
+    "heuristic": "dlcs",
+    "steps": [
+        {
+            "Decision Level": 1,
+            "Partial Assignment": "{2}",
+            "Decision Literal": 2,
+            "Implied Literal": null,
+            "Satisfied Clauses": [0],
+            "Contradicted Clauses": [],
+            "Unit Clauses": [1],
+            "Pending Clauses": [],
+            "Explanation": "INC_DL dlcs"
+        },
+        {
+            "Decision Level": 1,
+            "Partial Assignment": "{2, -3}",
+            "Decision Literal": null,
+            "Implied Literal": -3,
+            "Satisfied Clauses": [0, 1],
+            "Contradicted Clauses": [],
+            "Unit Clauses": [],
+            "Pending Clauses": [],
+            "Explanation": "BCP 1"
+        }
+    ]
+}
+{
+    "heuristic": "dlis",
+    "steps": [
+        {
+            "Decision Level": 1,
+            "Partial Assignment": "{1}",
+            "Decision Literal": 1,
+            "Implied Literal": null,
+            "Satisfied Clauses": [0],
+            "Contradicted Clauses": [],
+            "Unit Clauses": [],
+            "Pending Clauses": [1],
+            "Explanation": "INC_DL dlis"
+        },
+        {
+            "Decision Level": 2,
+            "Partial Assignment": "{1, -2}",
+            "Decision Literal": -2,
+            "Implied Literal": null,
+            "Satisfied Clauses": [0, 1],
+            "Contradicted Clauses": [],
+            "Unit Clauses": [],
+            "Pending Clauses": [],
+            "Explanation": "INC_DL dlis"
+        }
+    ]
+}
+{
+    "heuristic": "moms",
+    "steps": [
+        {
+            "Decision Level": 1,
+            "Partial Assignment": "{2}",
+            "Decision Literal": 2,
+            "Implied Literal": null,
+            "Satisfied Clauses": [0],
+            "Contradicted Clauses": [],
+            "Unit Clauses": [1],
+            "Pending Clauses": [],
+            "Explanation": "INC_DL moms"
+        },
+        {
+            "Decision Level": 1,
+            "Partial Assignment": "{2, -3}",
+            "Decision Literal": null,
+            "Implied Literal": -3,
+            "Satisfied Clauses": [0, 1],
+            "Contradicted Clauses": [],
+            "Unit Clauses": [],
+            "Pending Clauses": [],
+            "Explanation": "BCP 1"
+        }
+    ]
+}

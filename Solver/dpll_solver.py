@@ -1,45 +1,60 @@
-from sat_problem import SATProblem
-from literal_count_branching_heuristics import dlcs, dlis, rdlcs, rdlis, default_heuristic
-from moms_branching_heuristics import moms, rmoms
-from clause_elimination_methods import pure_literal_elimination
-from twl_sat_problem import TWLSATProblem
+import sys
+import os
+
+# Add the parent directory of the project to the PYTHONPATH
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+
+from SATProblems.sat_problem import SATProblem
+from SATProblems.twl_sat_problem import TWLSATProblem
+from Heuristics.literal_count_branching_heuristics import dlcs, dlis, rdlcs, rdlis, default_heuristic
+from Heuristics.moms_branching_heuristics import moms, rmoms
+from Clause_Elimination_Methods.clause_elimination_methods import pure_literal_elimination
+
 
 class DPLLSolver:
     """
-    This class implements the DPLL (Davis-Putnam-Logemann-Loveland) SAT solver algorithm.
-    
+    This class implements the DPLL (Davis-Putnam-Logemann-Loveland) SAT solver algorithm, 
+    with enhancements such as logging, branching heuristics, and Two Watched Literals (TWL) optimization.
+
     Attributes:
         problem (SATProblem): The SAT problem to be solved.
+        use_logger (bool): Whether to log steps during the solving process.
         use_pure_literal (bool): Whether to use pure literal elimination.
         steps (list of dict): A list of dictionaries to log the steps of the solving process.
         decision_level (int): The current decision depth level.
         heuristic (function): The branching heuristic function used to select decision literals,
-            based on the selected heuristic strategy (default, dlcs, dlis, rdlcs, rdlis, moms or rmoms).
-        heuristic_name (str): The name of the current heuristic.
+            based on the selected heuristic strategy (default, dlcs, dlis, rdlcs, rdlis, moms, rmoms).
+        heuristic_name (str): The name of the current heuristic being used.
         k (int): The value of k for the MOM's heuristic.
         twl (bool): Whether to use Two Watched Literals optimization.
-    
-    Methods:
-        unit_propagation(): Perform unit propagation on the current formula.
-        choose_literal(): Choose a literal for branching.
-        log_step(): Log the current state in the DPLL decision process.
-        dpll_recursive_with_logging(): Recursive DPLL algorithm with logging at each step.
-        solve(): The main DPLL solving function.
-        print_steps(): Print the logged decision steps.
-        get_decision_steps(): Retrieve the logged decision steps.
-    """
 
-    def __init__(self, problem, use_pure_literal=False, heuristic='default', k=0, twl=False):
+    Methods:
+        __init__(problem, use_logger=False, use_pure_literal=False, heuristic='default', k=0, twl=False):
+            Initialize the solver with a SATProblem instance and various options.
+        unit_propagation():
+            Perform unit propagation on the current formula to simplify the problem.
+        choose_literal(): Reserved for future implementation of literal selection logic.
+        log_step(decision_literal=None, implied_literal=None, explanation=""):
+            Log the current state in the DPLL decision process.
+        dpll_recursive_with_logging():
+            Recursively solve the SAT problem using the DPLL algorithm with optional detailed logging.
+        solve():
+            The main DPLL solving function.
+        print_steps(table_format=True):
+            Print the logged decision steps in a tabular format.
+        get_decision_steps():
+            Retrieve the logged decision steps as a list of dictionaries.
+    """
+    def __init__(self, problem, use_logger=False, use_pure_literal=False, heuristic='default', k=0, twl=False):
         """
         Initialize the solver with a SATProblem instance.
 
         Args:
             problem (SATProblem): The SAT problem to be solved.
-            use_pure_literal (bool): Whether to use pure literal elimination.
-                Defaults to False.
+            use_logger (bool): Whether to log steps during the solving process. Defaults to False.
+            use_pure_literal (bool): Whether to use pure literal elimination. Defaults to False.
             heuristic (str): The branching heuristic to use for selecting decision literals.
-                Options are 'default', 'dlcs', 'dlis', 'rdlcs', 'rdlis', 'moms', or 'rmoms'.
-                Defaults to 'default'.
+                Options: 'default', 'dlcs', 'dlis', 'rdlcs', 'rdlis', 'moms', 'rmoms'. Defaults to 'default'.
             k (int): The value of k for the MOM's heuristic. Defaults to 0.
             twl (bool): Whether to use Two Watched Literals optimization. Defaults to False.
 
@@ -49,6 +64,7 @@ class DPLLSolver:
         if not isinstance(problem, SATProblem):
             raise TypeError("Problem must be an instance of SATProblem")
         self.problem = problem
+        self.use_logger = use_logger
         self.use_pure_literal = use_pure_literal
         self.k = k
         self.twl = twl
@@ -76,13 +92,14 @@ class DPLLSolver:
     
     def unit_propagation(self):
         """
-        Perform unit propagation: If a clause becomes a unit clause (only one literal unassigned),
-        assign that literal accordingly. 
-        Also referred to as Boolean Constraint Propagation (BCP).
-        
+        Perform unit propagation (also known as Boolean Constraint Propagation - BCP):
+        - If a clause becomes a unit clause (only one unassigned literal), assign that literal.
+
         Returns:
-            tuple: (bool, int, int) - True if no conflicts, False if conflict occurred, 
-                   the propagated literal, and the affected clause.
+            tuple: (bool, int, int) -
+                - True if propagation succeeded, False if a conflict occurred.
+                - The propagated literal.
+                - The index of the clause where propagation occurred.
         """
         for i, clause in enumerate(self.problem.clauses):
             if not self.problem.satisfaction_map[i] and len([lit for lit in clause if abs(lit) not in self.problem.assignments]) == 1:
@@ -91,7 +108,6 @@ class DPLLSolver:
                 var = abs(unit_literal)
                 value = unit_literal > 0
                 self.problem.assignments[var] = value
-                self.problem.update_satisfaction_map()
                 return True, unit_literal, i
         return False, None, None  # No unit clause found
 
@@ -104,36 +120,44 @@ class DPLLSolver:
         """
         # Literal selection logic to be implemented here.
         pass
- 
+
     def log_step(self, decision_literal=None, implied_literal=None, explanation=""):
         """
-        Log the current state in the DPLL decision process.
-        
+        Log the current state in the DPLL decision process, including key details like:
+        - Partial assignments
+        - Satisfied, contradicted, unit, and pending clauses
+        - Decision and implied literals
+
         Args:
             decision_literal (int): The decision literal at the current step.
             implied_literal (int): The implied literal from unit propagation.
-            explanation (str): Explanation of the current action.
+            explanation (str): A textual explanation of the current action.
         """
         # Partial assignment
         partial_assignment = "{" + ", ".join(str(var if value else -var) for var, value in self.problem.assignments.items()) + "}"
         
-        # Satisfied and contradicted clauses
-        satisfied_clauses = [i for i, satisfied in enumerate(self.problem.satisfaction_map) if satisfied]
-        contradicted_clauses = [
-            i for i, clause in enumerate(self.problem.clauses)
-            if len([lit for lit in clause if abs(lit) not in self.problem.assignments]) == 0 
-            and not self.problem.satisfaction_map[i]]
-        
-        # Unit clauses and pending clauses
-        unit_clauses = [
-            i for i, clause in enumerate(self.problem.clauses) 
-            if len([lit for lit in clause if abs(lit) not in self.problem.assignments]) == 1 
-            and not self.problem.satisfaction_map[i]]
-        pending_clauses = [
-            i for i, clause in enumerate(self.problem.clauses) 
-            if len([lit for lit in clause if abs(lit) not in self.problem.assignments]) > 1 
-            and not self.problem.satisfaction_map[i]]
-        
+        # Satisfied clauses, Contradicted clauses, Unit clauses and Pending clauses
+        satisfied_clauses = []
+        contradicted_clauses = []
+        unit_clauses = []
+        pending_clauses = []
+        for i, clause in enumerate(self.problem.clauses):
+            if self.problem.satisfaction_map[i]:
+                satisfied_clauses.append(i)
+                continue
+            else:
+                length = 0
+                for lit in clause:
+                    if abs(lit) not in self.problem.assignments:
+                        length += 1
+                        if length > 1:
+                            break
+                if length == 0:
+                    contradicted_clauses.append(i)
+                elif length == 1:
+                    unit_clauses.append(i)
+                else:
+                    pending_clauses.append(i)
         # Log entry
         self.steps.append({
             "Decision Level": self.decision_level,
@@ -149,8 +173,8 @@ class DPLLSolver:
 
     def dpll_recursive_with_logging(self):
         """
-        Recursive DPLL algorithm with logging at each step.
-        
+        Recursive implementation of the DPLL algorithm with optional detailed logging.
+
         Returns:
             bool: True if the formula is satisfiable, False otherwise.
         """
@@ -167,7 +191,9 @@ class DPLLSolver:
             if not propagation_occurred:
                 break
             propagated_literals.append(implied_literal)  # Track each implied literal
-            self.log_step(implied_literal=implied_literal, explanation="BCP " + str(affected_clause))
+            self.problem.update_satisfaction_map(operation='new assignment', literal_to_assign=implied_literal) # Update satisfaction map
+            if self.use_logger:
+                self.log_step(implied_literal=implied_literal, explanation="BCP " + str(affected_clause))
             if self.twl:
                 self.problem.update_watched_literals(implied_literal)
             if self.problem.is_satisfied():
@@ -176,6 +202,7 @@ class DPLLSolver:
                 # Backtrack unit propagation assignments if a conflict is found
                 for lit in propagated_literals:
                     del self.problem.assignments[abs(lit)]
+                self.problem.update_satisfaction_map(operation='undo assignment', literals_to_unassign=propagated_literals)
                 return False
 
         # Call the heuristic function to choose the decision literal and increment the decision level
@@ -187,19 +214,21 @@ class DPLLSolver:
 
         # Try assigning True to the literal
         self.problem.assignments[var] = True if decision_literal > 0 else False
-        self.problem.update_satisfaction_map()
+        self.problem.update_satisfaction_map(operation='new assignment', literal_to_assign=decision_literal)
         if self.twl:
             self.problem.update_watched_literals(decision_literal)
-        self.log_step(decision_literal=(var), explanation="INC_DL " + self.heuristic_name)
+        if self.use_logger:
+            self.log_step(decision_literal=(decision_literal), explanation="INC_DL " + self.heuristic_name)
         if self.dpll_recursive_with_logging():
             return True
 
         # Backtrack and try assigning False
         self.problem.assignments[var] = False if decision_literal > 0 else True
-        self.problem.update_satisfaction_map()
+        self.problem.update_satisfaction_map(operation='change assignment', literal_to_assign=-decision_literal)
         if self.twl:
             self.problem.update_watched_literals(-decision_literal)
-        self.log_step(decision_literal=(-var), explanation="INC_DL " + self.heuristic_name)
+        if self.use_logger:    
+            self.log_step(decision_literal=(-decision_literal), explanation="INC_DL " + self.heuristic_name)
         if self.dpll_recursive_with_logging():
             return True
 
@@ -207,30 +236,31 @@ class DPLLSolver:
         del self.problem.assignments[var]
         for lit in propagated_literals:
             del self.problem.assignments[abs(lit)]
-        self.problem.update_satisfaction_map()
+        affected_literals = [-decision_literal] + propagated_literals
         self.decision_level -= 1
+        self.problem.update_satisfaction_map(operation='undo assignment', literals_to_unassign=affected_literals)
         return False
     
     def solve(self):
         """
         Solve the SAT problem using the DPLL algorithm.
 
-        If pure literal elimination is enabled, the solver will first attempt to simplify 
-        the problem by eliminating clauses with pure literals. 
-        
-        If the Two-Watched Literals (TWL) optimization is enabled, it converts the problem 
-        instance to use watched literals before beginning the recursive DPLL solving process.
+        Features:
+            - Pure Literal Elimination: Simplify the problem by assigning pure literals (if enabled).
+            - Two Watched Literals (TWL): Convert the problem to use watched literals for optimization.
+            - Recursive DPLL Execution: Solve the problem using the selected heuristic and optimizations.
 
         Returns:
-            bool: Satisfiability result (True if satisfiable, False otherwise).
+            bool: True if the SAT problem is satisfiable, False otherwise.
         """
         if self.use_pure_literal:
             while True:
                 elimination_occurred, affected_literals = pure_literal_elimination(self.problem)
                 if not elimination_occurred:
                     break
-                self.problem.update_satisfaction_map()
-                self.log_step(explanation="PLE " + ", ".join(str(lit) for lit in affected_literals))
+                self.problem.update_satisfaction_map_after_clause_elimination(affected_literals)
+                if self.use_logger:
+                    self.log_step(explanation="PLE " + ", ".join(str(lit) for lit in affected_literals))
 
         if self.twl:
             self.problem = TWLSATProblem(self.problem)
@@ -240,10 +270,10 @@ class DPLLSolver:
     
     def print_steps(self, table_format=True):
         """
-        Print the logged decision steps.
+        Print the logged decision steps, optionally in a tabular format.
 
         Args:
-            table_format (bool): Whether to print the steps in a table format.
+            table_format (bool): Whether to print the steps in a table format. Defaults to True.
         """
         if table_format:
             # Print header row and title
@@ -271,10 +301,9 @@ class DPLLSolver:
 
     def get_decision_steps(self):
         """
-        Retrieve the decision steps logged during solving.
+        Retrieve the logged decision steps from the solving process.
 
         Returns:
-            list: The list of decision steps (each step is a dictionary).
+            list: A list of dictionaries, where each dictionary represents a logged step.
         """
         return self.steps
-

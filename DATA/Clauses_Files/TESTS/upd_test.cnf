@@ -1,0 +1,8 @@
+c unit propagation undo check while backtracking
+p cnf 4 6
+1 2 0
+-1 2 0
+-1 -2 3 4 0
+-1 -2 3 -4 0
+-1 -2 -3 4 0
+-1 -2 -3 -4 0
