@@ -1,0 +1,20 @@
+[tool.poetry]
+name = "sat-solver"
+version = "1.0.0"
+description = "Implementation of SAT problem-solver algorithms under business requirements"
+authors = ["Sofoklis Tsiakalos"]
+license = "MIT"
+readme = "README.md"
+
+[tool.poetry.dependencies]
+# Define the main dependencies
+python = "^3.10"
+
+[tool.poetry.group.dev.dependencies]
+# Define development dependencies (testing and profiling tools)
+pytest = "^8.3.3"
+snakeviz = "^2.2.2"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"

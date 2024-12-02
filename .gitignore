@@ -11,8 +11,11 @@ venv/
 # Other temporary files
 *.log
 
-# Ignore test.py
-test.py
+# Profiling and test output
+*.prof
+.pytest_cache/
 
-# Ignore the profile file
-profile_output.prof
+# Extra test files and Full dataset
+multi_SATLIB_solver.py
+SATLIB_Full/
+test.py

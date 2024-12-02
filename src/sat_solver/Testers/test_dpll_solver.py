@@ -2,15 +2,15 @@ import sys
 import os
 
 # Add the parent directory of the project to the PYTHONPATH
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), 'src')))
 
-from Solver.dpll_solver import SATProblem, DPLLSolver
-from DIMACS_Reader.clause_reader import ClauseReader
+from sat_solver.Solver.dpll_solver import SATProblem, DPLLSolver
+from sat_solver.DIMACS_Reader.clause_reader import ClauseReader
 
 # TEST DPLL SOLVE WITH LOGGING ENABLED
 
 # DIMACS file reading
-filename = "../DATA/Clauses_Files/TESTS/twl_test.cnf"
+filename = "../sat_solver/DATA/Clauses_Files/TESTS/twl_test.cnf"
 # filename = "../DATA/Clauses_Files/TESTS/ple_test.cnf"
 clauses, num_vars, num_clauses = ClauseReader.read_file(filename)
 print(f"Clauses: {clauses}")
@@ -19,7 +19,7 @@ print(f"Number of Clauses: {num_clauses}")
 
 # Initialize SATProblem with the clauses and DPLL solver with the problem
 problem = SATProblem(clauses)
-solver = DPLLSolver(problem, use_logger=True, heuristic='default', twl=True)
+solver = DPLLSolver(problem, use_logger=True, heuristic='default', true_twl=True)
 
 # Solve the problem.
 is_satisfiable = solver.solve() # Enable this line to test the solver
