@@ -3,17 +3,26 @@ clause_reader.py
 
 This module provides the `ClauseReader` class for reading SAT problem clauses 
 from a file in DIMACS format, commonly used in SATLIB and SAT Competitions.
+
+Dependencies:
+    - `ClausesModel`: A Pydantic model that validates and represents the structure of clauses and associated metadata.
+
+Classes:
+    ClauseReader:
+        A utility class for reading and validating SAT problem clauses from a DIMACS file.
 """
+from .clauses_model import ClausesModel
+
 class ClauseReader:
     """
     A utility class for reading SAT problem clauses from a file in DIMACS format.
 
     Methods:
-        read_file(filename):
-            Reads a DIMACS-formatted file and extracts clauses, along with the number of variables and clauses.
+        read_file(filename: str) -> ClausesModel:
+            Reads a DIMACS-formatted file and returns a validated ClausesModel instance.
     """
     @staticmethod
-    def read_file(filename):
+    def read_file(filename: str) -> ClausesModel:
         """
         Reads a DIMACS-formatted file and extracts clauses, the number of variables, and the number of clauses.
 
@@ -27,16 +36,14 @@ class ClauseReader:
             filename (str): The path to the DIMACS file.
 
         Returns:
-            tuple: (List[List[int]], int, int)
-                - List of clauses (each clause is a list of integers),
-                - Number of variables as declared in the problem line,
-                - Number of clauses as declared in the problem line.
-        
+            ClausesModel: A validated ClausesModel instance containing the clauses, number of variables, 
+            and number of clauses.
+
         Raises:
             ValueError: If the file format is invalid or contains errors, such as:
                 - Missing or malformed problem line.
                 - Unsupported format type (only 'cnf' is supported).
-                - Clauses not ending with 0.
+                - Invalid clause format (e.g., missing trailing 0).
         """
         clauses = []
         num_vars = 0
@@ -56,7 +63,5 @@ class ClauseReader:
                     break
                 else:
                     clause = list(map(int, line.split()))
-                    if clause[-1] != 0:  # Each clause must end with a 0 in DIMACS
-                        raise ValueError(f"Clause does not end with 0: {line}")
-                    clauses.append(clause[:-1])  # Exclude trailing 0
-        return clauses, num_vars, num_clauses
+                    clauses.append(clause)  
+        return ClausesModel(clauses=clauses, num_vars=num_vars, num_clauses=num_clauses)

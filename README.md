@@ -7,17 +7,16 @@ This project is an implementation of a SAT (Boolean Satisfiability) solver using
 SAT_SOLVER/
 ├── src/sat_solver
 |   ├── Solver/
-|   │   ├── dpll_solver.py                # DPLL algorithm implementation.
+|   │   └── dpll_solver.py                # DPLL algorithm implementation.
 |   ├── SATProblems/
 |   │   ├── sat_problem.py                # SAT problem representation.
 |   │   ├── twl_sat_problem.py            # Two Watched Literals (TWL) SAT problem representation.
-|   |   ├── true_twl_sat_problem,py       # True Two Watched Literals (TWL) SAT problem representation.
-|   ├── Clause_Elimination_Methods/
-|   │   └── clause_elimination_methods.py  # Clause elimination techniques (e.g., pure literal elimination).
+|   |   └── true_twl_sat_problem,py       # True Two Watched Literals (TWL) SAT problem representation.
 |   ├── Heuristics/
 |   │   ├── literal_count_branching_heuristics.py  # Literal count heuristics (Default, DLCS, DLIS, RDLCS, RDLIS).
 |   │   └── moms_branching_heuristics.py           # MOM’s and RMOM’s heuristics.
 |   ├── DIMACS_Reader/
+|   │   ├── clauses_model.py             # Model for DIMACS clauses, used to initialize the dpll_solver.
 |   │   └── clause_reader.py             # Logic for reading DIMACS CNF files.
 |   ├── DATA/
 |   │   ├── Clauses_Files/
@@ -90,6 +89,12 @@ SAT_SOLVER/
     - Simplified test discovery and execution with the poetry run pytest command.
     - Integration of fixtures for reusable test setups, improving maintainability and readability.
 
+### Phase 3.2.1: Pydantic, Paths, and BCP/is_unsatisfied Logic Change 
+- **Path Configuration Fix**: Resolved module import issues by addressing incorrect path configurations. Ensure your working directory is set to src/sat_solver during execution to avoid errors.
+- **BCP Optimization**: Improved Boolean Constraint Propagation (BCP) logic for better performance.
+- **is_unsatisfied Optimization**: Enhanced logic for detecting unsatisfied clauses, reducing overhead.
+- **Pydantic Integration**: Structured and validated configurations using Pydantic for better robustness.
+
 ## Requirements
 
 - Python 3.10 (in order to be compatioble with PyPy)
@@ -120,12 +125,15 @@ SAT_SOLVER/
 
 1. To solve a SAT problem:
     ```python
-    from SATPRoblems.sat_problem import SATProblem
-    from Solver.dpll_solver import DPLLSolver
+    from sat_solver.DIMACS_Reader.clauses_model import ClausesModel
+    from sat_solver.Solver.dpll_solver import DPLLSolver
 
-    clauses = [[1, -3], [-2, 3], [2, 4], [-4]]  # Example problem
-    problem = SATProblem(clauses)
-    solver = DPLLSolver(problem, use_pure_literal=True, heuristic='moms', k=2, twl=True)
+    clauses = [[1, -3, 0], [-2, 3, 0], [2, 4, 0], [-4, 0]]  # Example problem
+    num_of_clauses = 4
+    num_of_variables = 4
+    clauses_model = ClausesModel(clauses=clauses, num_clauses=num_of_clauses, num_vars=num_of_variables)
+
+    solver = DPLLSolver(clauses_model=clauses_model, use_logger=True, heuristic='moms', k=2, twl=False)
 
     is_satisfiable = solver.solve()
     print("Satisfiable:", is_satisfiable)
@@ -143,6 +151,7 @@ SAT_SOLVER/
 
 3. **Two Watched Literals (TWL)**:
     To enable Two Watched Literals, pass twl=True when initializing DPLLSolver.
+    To enable True Two Watched Literals, pass true_twl=True when initializing DPLLSolver.
 
 4. **Testing**:
    Run tests to verify the solver works correctly:
@@ -151,7 +160,7 @@ SAT_SOLVER/
     cd src/sat_solver
     pytest -v testers/version_tester.py  # Run tests
     pytest -v -s testers/version_tester.py  # Include logger output during test runs
-    poetry exit # Exits the Poetry environment
+    exit # Exits the Poetry environment
    ```
 
 5. **Performance Testing**:
@@ -161,7 +170,7 @@ SAT_SOLVER/
     cd src/sat_solver
     pypy testers/test_SATLIB.py # Execute tests with PyPy for performance comparison
     snakeviz testers/profile_output.prof  # This opens a visualization of the profiling data
-    poetry exit # Exits the Poetry environment
+    exit # Exits the Poetry environment
    ```
 
 ## Acknowledgements

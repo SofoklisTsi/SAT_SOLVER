@@ -21,8 +21,10 @@ Functions:
 """
 
 import random
+from sat_solver.SATProblems.sat_problem import SATProblem
+from typing import Dict
 
-def _count_occurrences_in_smallest_clauses(problem):
+def _count_occurrences_in_smallest_clauses(problem: SATProblem) -> Dict[int, Dict[int, int]]:
     """
     Helper function to count occurrences of each literal in the smallest non-satisfied clauses.
 
@@ -54,7 +56,7 @@ def _count_occurrences_in_smallest_clauses(problem):
             literal_counts[var][1 if lit > 0 else -1] += 1
     return literal_counts
 
-def moms(problem, k=0):
+def moms(problem: SATProblem, k: int = 0):
     """
     MOM's Heuristic (Maximum Occurrences on clauses of Minimum size).
     Selects the variable that maximizes the function (f(x) + f(¬x)) * 2^k + f(x) * f(¬x),
@@ -86,7 +88,7 @@ def moms(problem, k=0):
 
     return best_var * best_sign
 
-def rmoms(problem, k=0):
+def rmoms(problem: SATProblem, k: int = 0):
     """
     Randomized MOM's Heuristic (RMOM's).
     Selects the variable that would be selected by MOM's, but assigns it a random value (True or False).

@@ -89,11 +89,6 @@ Example:
     - Uses `pytest.mark.parametrize` to dynamically run tests for each heuristic or feature.
 """
 
-# Add the parent directory of the project to the PYTHONPATH
-import sys
-import os
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), 'src')))
-
 # Set up a logger
 import logging
 logger = logging.getLogger(__name__)
@@ -105,14 +100,16 @@ console_handler.setFormatter(formatter)
 logger.addHandler(console_handler)
 
 import pytest
+from typing import Callable, Dict, Tuple
 from sat_solver.Solver.dpll_solver import SATProblem, DPLLSolver
 from sat_solver.DIMACS_Reader.clause_reader import ClauseReader
+from sat_solver.DIMACS_Reader.clauses_model import ClausesModel
 import os
 import json
 from itertools import product
 
 @pytest.fixture
-def load_test_data():
+def load_test_data() -> Callable:
     """
     Fixture to load test clauses and results from the directory.
 
@@ -126,7 +123,7 @@ def load_test_data():
         - expected_results (Dict): Parsed JSON objects of `.results` files.
         - clauses (Dict): Parsed clauses from `.cnf` files.
     """
-    def _load_test_data(results_dir, clauses_dir):
+    def _load_test_data(results_dir: str, clauses_dir: str) -> Tuple[Dict[str, Dict[str, list]], Dict[str, ClausesModel]]:
         results_files = []
         clauses_files = []
         for root, _, files in os.walk(results_dir):
@@ -134,7 +131,8 @@ def load_test_data():
         for root, _, files in os.walk(clauses_dir):
             clauses_files.extend([os.path.join(root, f) for f in files if f.endswith('.cnf')])
         
-        expected_results = {}
+        # create a dictionary of expected results
+        expected_results: Dict[str, Dict[str, list]] = {}
         for filepath in results_files:
             file_name = os.path.splitext(os.path.basename(filepath))[0]
             expected_results[file_name] = {}
@@ -147,10 +145,10 @@ def load_test_data():
                     if heuristic not in expected_results[file_name]:
                         expected_results[file_name][heuristic] = []
                     expected_results[file_name][heuristic].extend(entry["steps"])
-        
-        clauses = {}
+        # create a dictionary of ClausesModel objects
+        clauses: Dict[str, ClausesModel] = {}
         for filepath in clauses_files:
-            clauses_tmp, _, _ = ClauseReader.read_file(filepath)
+            clauses_tmp: ClausesModel = ClauseReader.read_file(filepath)
             file_name = os.path.splitext(os.path.basename(filepath))[0]
             clauses[file_name] = clauses_tmp
         
@@ -159,7 +157,7 @@ def load_test_data():
     return _load_test_data
 
 @pytest.fixture
-def load_pdfs_test_data(load_test_data):
+def load_pdfs_test_data(load_test_data: Callable) -> Tuple[Dict[str, Dict[str, list]], Dict[str, ClausesModel]]:
     """
     Loads PDF problems for testing.
 
@@ -174,7 +172,7 @@ def load_pdfs_test_data(load_test_data):
     )
 
 @pytest.fixture
-def load_func_test_data(load_test_data):
+def load_func_test_data(load_test_data: Callable) -> Tuple[Dict[str, Dict[str, list]], Dict[str, ClausesModel]]:
     """
     Loads functional test problems for PLE, UPD, and TWL.
 
@@ -189,7 +187,7 @@ def load_func_test_data(load_test_data):
     )
 
 @pytest.mark.parametrize("heuristic", ["default", "dlcs", "dlis", "moms"])
-def test_pdf_problems(heuristic, load_pdfs_test_data):
+def test_pdf_problems(heuristic: str, load_pdfs_test_data: Tuple[Dict[str, Dict[str, list]], Dict[str, ClausesModel]]) -> None:
     """
     Tests the solver's correctness on problems provided in the PDFS directory.
 
@@ -203,8 +201,7 @@ def test_pdf_problems(heuristic, load_pdfs_test_data):
     expected_results, clauses = load_pdfs_test_data
     for file in expected_results:
         if heuristic in expected_results[file]:
-            problem = SATProblem(clauses[file])
-            solver = DPLLSolver(problem=problem, use_logger=True, heuristic=heuristic)
+            solver = DPLLSolver(clauses_model=clauses[file], use_logger=True, heuristic=heuristic)
             is_satisfiable = solver.solve()
             assert solver.get_decision_steps() == expected_results[file][heuristic], (
                 f"Test failed for {file} with heuristic {heuristic}. "
@@ -212,28 +209,8 @@ def test_pdf_problems(heuristic, load_pdfs_test_data):
             )
             logger.info(f"PDF Problem {file}, Heuristic {heuristic} passed. Satisfiable: {is_satisfiable}")
 
-def test_ple(load_func_test_data):
-    """
-    Tests the solver's implementation of pure literal elimination (PLE).
-
-    Args:
-        load_func_test_data (fixture): Loaded functional test clauses and expected results.
-
-    Asserts:
-        - Solver's decision steps for PLE match expected results.
-    """
-    expected_results, clauses = load_func_test_data
-    problem = SATProblem(clauses["ple_test"])
-    solver = DPLLSolver(problem, use_logger=True, use_pure_literal=True)
-    is_satisfiable = solver.solve()
-    assert solver.get_decision_steps() == expected_results["ple_test"]["PLE"], (
-        f"PLE test failed. Expected: {expected_results['ple_test']['PLE']}, "
-        f"Actual: {solver.get_decision_steps()}"
-    )
-    logger.info(f"PLE Test passed. Satisfiable: {is_satisfiable}")
-
 @pytest.mark.parametrize("heuristic", ["default", "dlcs", "dlis", "moms"])
-def test_upd(heuristic, load_func_test_data):
+def test_upd(heuristic: str, load_func_test_data: Tuple[Dict[str, Dict[str, list]], Dict[str, ClausesModel]]) -> None:
     """
     Tests the solver's implementation of unit propagation (UPD) under different heuristics.
 
@@ -246,8 +223,7 @@ def test_upd(heuristic, load_func_test_data):
     """
     expected_results, clauses = load_func_test_data
     if heuristic in expected_results["upd_test"]:
-        problem = SATProblem(clauses["upd_test"])
-        solver = DPLLSolver(problem, use_logger=True, heuristic=heuristic)
+        solver = DPLLSolver(clauses_model=clauses["upd_test"], use_logger=True, heuristic=heuristic)
         is_satisfiable = solver.solve()
         assert solver.get_decision_steps() == expected_results["upd_test"][heuristic], (
             f"Unit propagation test failed for heuristic {heuristic}. "
@@ -265,7 +241,7 @@ method_to_argument = {
     "true_twl_test": {"true_twl": True},
 }
 @pytest.mark.parametrize("heuristic, method", product(heuristic, method))
-def test_twl(heuristic, method, load_func_test_data):
+def test_twl(heuristic: str, method: str, load_func_test_data: Tuple[Dict[str, Dict[str, list]], Dict[str, ClausesModel]]) -> None:
     """
     Tests the solver's Two Watched Literals (TWL) optimization.
 
@@ -279,9 +255,8 @@ def test_twl(heuristic, method, load_func_test_data):
     """
     expected_results, clauses = load_func_test_data
     if heuristic in expected_results[method]:
-        problem = SATProblem(clauses["twl_test"])
         # Dynamically unpack the correct arguments based on the method
-        solver = DPLLSolver(problem, use_logger=True, heuristic=heuristic, **method_to_argument[method]) 
+        solver = DPLLSolver(clauses_model=clauses["twl_test"], use_logger=True, heuristic=heuristic, **method_to_argument[method])
         is_satisfiable = solver.solve()
         assert solver.get_decision_steps() == expected_results[method][heuristic], (
             f"{argument} test failed for heuristic {heuristic}. "

@@ -9,6 +9,7 @@ readme = "README.md"
 [tool.poetry.dependencies]
 # Define the main dependencies
 python = "^3.10"
+pydantic = "^2.10.2"
 
 [tool.poetry.group.dev.dependencies]
 # Define development dependencies (testing and profiling tools)

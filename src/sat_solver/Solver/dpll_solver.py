@@ -1,103 +1,133 @@
-import sys
-import os
+"""
+This module implements the DPLL (Davis-Putnam-Logemann-Loveland) SAT solver algorithm, which is enhanced with various optimizations such as:
+- Branching heuristics for variable selection (including DLCS, DLIS, and MOM's heuristics).
+- Two Watched Literals (TWL) optimization.
+- Support for logging the decision process step-by-step.
 
-# Add the parent directory of the project to the PYTHONPATH
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+The `DPLLSolver` class is the core solver that applies the DPLL algorithm, allowing users to solve SAT problems using different heuristics and optimizations.
+"""
 
-from SATProblems.sat_problem import SATProblem
-from SATProblems.twl_sat_problem import TWLSATProblem
-from SATProblems.true_twl_sat_problem import TrueTWLSATProblem
-from Heuristics.literal_count_branching_heuristics import dlcs, dlis, rdlcs, rdlis, default_heuristic
-from Heuristics.moms_branching_heuristics import moms, rmoms
-from Clause_Elimination_Methods.clause_elimination_methods import pure_literal_elimination
+from pydantic import BaseModel, Field, model_validator
+from typing import Callable, Dict, List, Literal, Optional, Tuple
+from sat_solver.DIMACS_Reader.clauses_model import ClausesModel
+from sat_solver.SATProblems.sat_problem import SATProblem
+from sat_solver.SATProblems.twl_sat_problem import TWLSATProblem
+from sat_solver.SATProblems.true_twl_sat_problem import TrueTWLSATProblem
+from sat_solver.Heuristics.literal_count_branching_heuristics import dlcs, dlis, rdlcs, rdlis, default_heuristic
+from sat_solver.Heuristics.moms_branching_heuristics import moms, rmoms
 
-
-class DPLLSolver:
+class DPLLSolver(BaseModel):
     """
-    This class implements the DPLL (Davis-Putnam-Logemann-Loveland) SAT solver algorithm, 
-    with enhancements such as logging, branching heuristics, and Two Watched Literals (TWL) optimization.
+    A class implementing the DPLL (Davis-Putnam-Logemann-Loveland) SAT solver algorithm, with features such as:
+    - Support for various branching heuristics (e.g., DLCS, DLIS, MOMS).
+    - Optimizations like Two Watched Literals (TWL).
+    - Detailed logging of decision steps.
 
     Attributes:
+        clauses_model (ClausesModel): The clauses model to be solved.
         problem (SATProblem): The SAT problem to be solved.
         use_logger (bool): Whether to log steps during the solving process.
-        use_pure_literal (bool): Whether to use pure literal elimination.
-        steps (list of dict): A list of dictionaries to log the steps of the solving process.
+        steps (List[dict]): A list of dictionaries to log the steps of the solving process.
         decision_level (int): The current decision depth level.
-        heuristic (function): The branching heuristic function used to select decision literals,
-            based on the selected heuristic strategy (default, dlcs, dlis, rdlcs, rdlis, moms, rmoms).
-        heuristic_name (str): The name of the current heuristic being used.
+        heuristic (str): The branching heuristic to use ('default', 'dlcs', 'dlis', 'rdlcs', 'rdlis', 'moms', 'rmoms').
+        heuristic_function (Callable): The branching heuristic function to select decision literals.
+        heuristic_name (str): The name of the heuristic currently in use.
         k (int): The value of k for the MOM's heuristic.
         twl (bool): Whether to use Two Watched Literals optimization.
         true_twl (bool): Whether to use True Two Watched Literals optimization (If a literal that is not watched becames True, 
             the clause is not satisfied).
 
     Methods:
-        __init__(problem, use_logger=False, use_pure_literal=False, heuristic='default', k=0, twl=False):
-            Initialize the solver with a SATProblem instance and various options.
-        unit_propagation():
-            Perform unit propagation on the current formula to simplify the problem.
-        choose_literal(): Reserved for future implementation of literal selection logic.
-        log_step(decision_literal=None, implied_literal=None, explanation=""):
-            Log the current state in the DPLL decision process.
-        _dpll_recursive():
-            Recursively solve the SAT problem using the DPLL algorithm with optional detailed logging.
-        solve():
-            The main DPLL solving function.
-        print_steps(table_format=True):
-            Print the logged decision steps in a tabular format.
-        get_decision_steps():
-            Retrieve the logged decision steps as a list of dictionaries.
+        initialize_computed_fields(values: Dict[str, any]) -> Dict[str, any]:
+            Initializes computed fields like the heuristic function, problem type (SATProblem, TWLSATProblem, or TrueTWLSATProblem),
+            and validates parameters.
+        unit_propagation() -> Tuple[bool, int, int]:
+            Performs unit propagation on the current formula to simplify the problem.
+        choose_literal() -> int:
+            Chooses a literal for branching (currently a placeholder for future implementation).
+        log_step(decision_literal: Optional[int] = None, implied_literal: Optional[int] = None, explanation: str = "") -> None:
+            Logs the current state during the DPLL decision process.
+        _dpll_recursive() -> bool:
+            Recursively solves the SAT problem using the DPLL algorithm.
+        solve() -> bool:
+            The main method to solve the SAT problem.
+        print_steps(table_format: bool = True) -> None:
+            Prints the logged decision steps in a tabular format.
+        get_decision_steps() -> List[dict]:
+            Retrieves the logged decision steps from the solving process.
     """
-    def __init__(self, problem, use_logger=False, use_pure_literal=False, heuristic='default', k=0, twl=False, true_twl=False):
+    clauses_model: ClausesModel = Field(..., title="The clauses model to be solved.")
+    problem: SATProblem = Field(..., title="The SAT problem to be solved.")
+    use_logger: bool = Field(default=False, title="Whether to log steps during the solving process.")
+    steps: List[dict] = Field(default_factory=list, title="A list of dictionaries to log the steps of the solving process.")
+    decision_level: int = Field(default=0, title="The current decision depth level.")
+    heuristic: Literal['default', 'dlcs', 'dlis', 'rdlcs', 'rdlis', 'moms', 'rmoms'] = Field(default="default", description="Branching heuristic to use.")
+    heuristic_function: Callable = Field(default=default_heuristic, title="The branching heuristic function used to select decision literals.")
+    heuristic_name: str = Field(default='default', title="The name of the current heuristic being used.")
+    k: int = Field(default=0, title="The value of k for the MOM's heuristic.")
+    twl: bool = Field(default=False, title="Whether to use Two Watched Literals optimization.")
+    true_twl: bool = Field(default=False, title="Whether to use True Two Watched Literals optimization.")
+
+    @model_validator(mode='before')
+    @classmethod
+    def initialize_computed_fields(cls, values: Dict[str, any]) -> Dict[str, any]:
         """
-        Initialize the solver with a SATProblem instance.
+        Perform initial validation and compute derived attributes before constructing the model.
+
+        This method initializes the fields based on the provided `values`, including:
+        - Setting the `problem` attribute to the correct type (`SATProblem`, `TWLSATProblem`, or `TrueTWLSATProblem`).
+        - Mapping the provided heuristic string to the corresponding heuristic function.
 
         Args:
-            problem (SATProblem): The SAT problem to be solved.
-            use_logger (bool): Whether to log steps during the solving process. Defaults to False.
-            use_pure_literal (bool): Whether to use pure literal elimination. Defaults to False.
-            heuristic (str): The branching heuristic to use for selecting decision literals.
-                Options: 'default', 'dlcs', 'dlis', 'rdlcs', 'rdlis', 'moms', 'rmoms'. Defaults to 'default'.
-            k (int): The value of k for the MOM's heuristic. Defaults to 0.
-            twl (bool): Whether to use Two Watched Literals optimization. Defaults to False.
-            true_twl (bool): Whether to use True Two Watched Literals optimization. Defaults to False.
+            values (Dict[str, any]): The field values to initialize.
+
+        Returns:
+            Dict[str, any]: Updated field values after initialization.
 
         Raises:
-            TypeError: If `problem` is not an instance of SATProblem.
+            - `TypeError`: If the `clauses_model` field is not an instance of `ClausesModel`.
+                - This is raised when the `clauses_model` provided is not of the expected type, which is necessary to solve the SAT problem.
+            - `ValueError`: If the provided heuristic is not one of the recognized values (`'default'`, `'dlcs'`, `'dlis'`, `'rdlcs'`, `'rdlis'`, `'moms'`, `'rmoms'`).
+                - This is raised when the `heuristic` field contains an unsupported value, preventing the selection of an unknown heuristic.
         """
-        if not isinstance(problem, SATProblem):
-            raise TypeError("Problem must be an instance of SATProblem")
-        self.problem = problem
-        self.use_logger = use_logger
-        self.use_pure_literal = use_pure_literal
-        self.k = k
-        self.twl = twl
-        self.true_twl = true_twl
-
-        self.steps = []  # Initialize an empty list for logging steps
-        self.decision_level = 0  # Track the decision depth level
+        clauses_model = values['clauses_model']
+        if not isinstance(clauses_model, ClausesModel):
+            raise TypeError(f"Expected an instance of ClausesModel, but got {type(clauses_model)}")
+        
+        # Initialize the problem based on twl/true_twl settings
+        if values.get('twl'):
+            values['problem'] = TWLSATProblem(clauses_model=clauses_model)
+        elif values.get('true_twl'):
+            values['problem'] = TrueTWLSATProblem(clauses_model=clauses_model)
+        else:
+            values['problem'] = SATProblem(clauses_model=clauses_model)
 
         # Map heuristic names to functions
-        self.heuristics = {
+        heuristic_map = {
             'default': default_heuristic,
             'dlcs': dlcs,
             'dlis': dlis,
             'rdlcs': rdlcs,
             'rdlis': rdlis,
-            'moms': lambda problem: moms(problem, k=self.k),
-            'rmoms': lambda problem: rmoms(problem, k=self.k)
+            'moms': lambda problem: moms(problem, k=values.get('k', 0)),
+            'rmoms': lambda problem: rmoms(problem, k=values.get('k', 0))
         }
-        self.heuristic = self.heuristics.get(heuristic, default_heuristic)
-        if self.heuristic != default_heuristic:
-            self.heuristic_name = heuristic
-        else:
-            self.heuristic_name = 'default'
-        if self.twl:
-            self.heuristic_name += ' twl'
-        elif self.true_twl:
-            self.heuristic_name += ' true_twl'
+        heuristic = values.get('heuristic', 'default')
+        if heuristic not in heuristic_map:
+            raise ValueError(f"Unknown heuristic '{heuristic}'. Must be one of {list(heuristic_map.keys())}.")
+        
+        values['heuristic_function'] = heuristic_map[heuristic]
+        values['heuristic_name'] = heuristic
+
+        # Update heuristic name for twl/true_twl
+        if values.get('twl'):
+            values['heuristic_name'] += ' twl'
+        elif values.get('true_twl'):
+            values['heuristic_name'] += ' true_twl'
+
+        return values
     
-    def unit_propagation(self): 
+    def unit_propagation(self) -> Tuple[bool, int, int]: 
         """
         Perform unit propagation (also known as Boolean Constraint Propagation - BCP):
         - If a clause becomes a unit clause (only one unassigned literal), assign that literal.
@@ -108,17 +138,17 @@ class DPLLSolver:
                 - The propagated literal.
                 - The index of the clause where propagation occurred.
         """
-        for i, clause in enumerate(self.problem.clauses):
-            if not self.problem.satisfaction_map[i] and self.problem.num_of_unassigned_literals_in_clause[i] == 1:
+        if self.problem.get_unitary_clauses():
+            for i in self.problem.get_unitary_clauses():
                 # Identify the unit literal and propagate it
-                unit_literal = next(lit for lit in clause if abs(lit) not in self.problem.assignments)
+                unit_literal = next(lit for lit in self.problem.clauses[i] if abs(lit) not in self.problem.assignments)
                 var = abs(unit_literal)
                 value = unit_literal > 0
                 self.problem.assignments[var] = value
                 return True, unit_literal, i
         return False, None, None  # No unit clause found
 
-    def choose_literal(self):
+    def choose_literal(self) -> int:
         """
         Choose a literal from the formula for branching.
         
@@ -128,7 +158,7 @@ class DPLLSolver:
         # Literal selection logic to be implemented here.
         pass
 
-    def log_step(self, decision_literal=None, implied_literal=None, explanation=""):
+    def log_step(self, decision_literal: Optional[int] = None, implied_literal : Optional[int] = None, explanation: str = "") -> None:
         """
         Log the current state in the DPLL decision process, including key details like:
         - Partial assignments
@@ -153,7 +183,7 @@ class DPLLSolver:
                 satisfied_clauses.append(i)
                 continue
             else:
-                length = self.problem.num_of_unassigned_literals_in_clause[i] # NEW CODE
+                length = self.problem.num_of_unassigned_literals_in_clause[i] 
                 if length == 0:
                     contradicted_clauses.append(i)
                 elif length == 1:
@@ -173,7 +203,7 @@ class DPLLSolver:
             "Explanation": explanation
         })
 
-    def _dpll_recursive(self):
+    def _dpll_recursive(self) -> bool:
         """
         Recursive implementation of the DPLL algorithm with optional detailed logging.
 
@@ -206,7 +236,7 @@ class DPLLSolver:
                 return False
 
         # Call the heuristic function to choose the decision literal and increment the decision level
-        decision_literal = self.heuristic(self.problem)
+        decision_literal = self.heuristic_function(self.problem)
         if not decision_literal:
             return self.problem.is_satisfied()
         var = abs(decision_literal)
@@ -237,36 +267,17 @@ class DPLLSolver:
         self.problem.update_satisfaction_map(operation='undo assignment', literals_to_unassign=affected_literals)
         return False
     
-    def solve(self):
+    def solve(self) -> bool:
         """
         Solve the SAT problem using the DPLL algorithm.
-
-        Features:
-            - Pure Literal Elimination: Simplify the problem by assigning pure literals (if enabled).
-            - Two Watched Literals (TWL): Convert the problem to use watched literals for optimization.
-            - Recursive DPLL Execution: Solve the problem using the selected heuristic and optimizations.
-
+        
         Returns:
-            bool: True if the SAT problem is satisfiable, False otherwise.
+            bool: True if the problem is satisfiable, False otherwise.
         """
-        if self.use_pure_literal:
-            while True:
-                elimination_occurred, affected_literals = pure_literal_elimination(self.problem)
-                if not elimination_occurred:
-                    break
-                self.problem.update_satisfaction_map_after_clause_elimination(affected_literals)
-                if self.use_logger:
-                    self.log_step(explanation="PLE " + ", ".join(str(lit) for lit in affected_literals))
-
-        if self.twl:
-            self.problem = TWLSATProblem(self.problem)
-        elif self.true_twl:
-            self.problem = TrueTWLSATProblem(self.problem)    
-
         satisfiable = self._dpll_recursive()
         return satisfiable
     
-    def print_steps(self, table_format=True):
+    def print_steps(self, table_format: bool = True) -> None:
         """
         Print the logged decision steps, optionally in a tabular format.
 
@@ -297,7 +308,7 @@ class DPLLSolver:
                 ]
                 print("{:<3} {:<25} {:<5} {:<5} {:<25} {:<20} {:<25} {:<25} {:<20}".format(*row))
 
-    def get_decision_steps(self):
+    def get_decision_steps(self) -> List[dict]:
         """
         Retrieve the logged decision steps from the solving process.
 

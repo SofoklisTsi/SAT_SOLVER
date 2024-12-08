@@ -26,8 +26,10 @@ Functions:
 """
 
 import random
+from typing import Dict
+from sat_solver.SATProblems.sat_problem import SATProblem
 
-def dlcs(problem):
+def dlcs(problem: SATProblem) -> int:
     """
     Dynamic Largest Combined Sum (DLCS) heuristic.
     Selects the variable with the largest sum of CP and CN (occurrences of
@@ -53,7 +55,7 @@ def dlcs(problem):
             best_sign = 1 if counts[1] >= counts[-1] else -1
     return best_var * best_sign
 
-def dlis(problem):
+def dlis(problem: SATProblem) -> int:
     """
     Dynamic Largest Individual Sum (DLIS) heuristic.
     Selects the variable with the largest individual count of CP or CN
@@ -78,7 +80,7 @@ def dlis(problem):
             best_var, best_count, best_sign = var, counts[-1], -1
     return best_var * best_sign
 
-def rdlcs(problem):
+def rdlcs(problem: SATProblem) -> int:
     """
     Randomized Dynamic Largest Combined Sum (RDLCS) heuristic.
     Selects the variable with the largest sum of CP and CN, as in DLCS,
@@ -94,7 +96,7 @@ def rdlcs(problem):
     # Randomly select the sign
     return var if random.choice([True, False]) else -var
 
-def rdlis(problem):
+def rdlis(problem: SATProblem) -> int:
     """
     Randomized Dynamic Largest Individual Sum (RDLIS) heuristic.
     Selects the variable with the largest individual count of CP or CN, as in DLIS,
@@ -110,7 +112,7 @@ def rdlis(problem):
     # Randomly select the sign
     return var if random.choice([True, False]) else -var
 
-def default_heuristic(problem):
+def default_heuristic(problem: SATProblem) -> int:
     """
     A simple default heuristic that selects the first unassigned literal
     and assigns it True.
@@ -125,7 +127,7 @@ def default_heuristic(problem):
                         and not problem.satisfaction_map[i]]
     return abs(unassigned_literals[0]) if unassigned_literals else None
 
-def _count_literals(problem):
+def _count_literals(problem: SATProblem) -> Dict[int, Dict[int, int]]:
     """
     Count the occurrences of each literal in unresolved clauses, providing
     a count of each variable's appearances as positive and negative literals.
