@@ -19,3 +19,4 @@ venv/
 multi_SATLIB_solver.py
 SATLIB_Full/
 test.py
+old_vc.py
