@@ -1,7 +1,7 @@
 """
-version_tester.py
+dpll_version_tester.py
 
-This module defines the `VersionTester` testing suite for the SAT Solver. It validates the solver 
+This module defines the `DPLL VersionTester` testing suite for the SAT Solver. It validates the solver 
 against various functionality tests using pytest, ensuring correctness and compliance with 
 business requirements.
 
@@ -101,7 +101,7 @@ logger.addHandler(console_handler)
 
 import pytest
 from typing import Callable, Dict, Tuple
-from sat_solver.Solver.dpll_solver import SATProblem, DPLLSolver
+from sat_solver.Solvers.dpll_solver import DPLLSolver
 from sat_solver.DIMACS_Reader.clause_reader import ClauseReader
 from sat_solver.DIMACS_Reader.clauses_model import ClausesModel
 import os
@@ -167,8 +167,8 @@ def load_pdfs_test_data(load_test_data: Callable) -> Tuple[Dict[str, Dict[str, l
         - clauses (Dict): Parsed PDF problem clauses.
     """
     return load_test_data(
-        "../sat_solver/DATA/Clauses_Files/Clauses_Files_Results/PDFS_Results",
-        "../sat_solver/DATA/Clauses_Files/PDFS"
+        "../sat_solver/DATA/DPLL_Clauses_Files/Clauses_Files_Results/PDFS_Results",
+        "../sat_solver/DATA/DPLL_Clauses_Files/PDFS"
     )
 
 @pytest.fixture
@@ -182,8 +182,8 @@ def load_func_test_data(load_test_data: Callable) -> Tuple[Dict[str, Dict[str, l
         - clauses (Dict): Parsed functional test clauses.
     """
     return load_test_data(
-        "../sat_solver/DATA/Clauses_Files/Clauses_Files_Results/TESTS_Results",
-        "../sat_solver/DATA/Clauses_Files/TESTS"
+        "../sat_solver/DATA/DPLL_Clauses_Files/Clauses_Files_Results/TESTS_Results",
+        "../sat_solver/DATA/DPLL_Clauses_Files/TESTS"
     )
 
 @pytest.mark.parametrize("heuristic", ["default", "dlcs", "dlis", "moms"])

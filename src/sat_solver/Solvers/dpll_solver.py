@@ -1,4 +1,6 @@
 """
+dpll_solver.py
+
 This module implements the DPLL (Davis-Putnam-Logemann-Loveland) SAT solver algorithm, which is enhanced with various optimizations such as:
 - Branching heuristics for variable selection (including DLCS, DLIS, and MOM's heuristics).
 - Two Watched Literals (TWL) optimization.
@@ -9,6 +11,7 @@ The `DPLLSolver` class is the core solver that applies the DPLL algorithm, allow
 
 from pydantic import BaseModel, Field, model_validator
 from typing import Callable, Dict, List, Literal, Optional, Tuple
+from sat_solver.Loggers.step_logger import StepLogger
 from sat_solver.DIMACS_Reader.clauses_model import ClausesModel
 from sat_solver.SATProblems.sat_problem import SATProblem
 from sat_solver.SATProblems.twl_sat_problem import TWLSATProblem
@@ -27,7 +30,7 @@ class DPLLSolver(BaseModel):
         clauses_model (ClausesModel): The clauses model to be solved.
         problem (SATProblem): The SAT problem to be solved.
         use_logger (bool): Whether to log steps during the solving process.
-        steps (List[dict]): A list of dictionaries to log the steps of the solving process.
+        step_logger (StepLogger): A logger to track the solving process.
         decision_level (int): The current decision depth level.
         heuristic (str): The branching heuristic to use ('default', 'dlcs', 'dlis', 'rdlcs', 'rdlis', 'moms', 'rmoms').
         heuristic_function (Callable): The branching heuristic function to select decision literals.
@@ -41,17 +44,21 @@ class DPLLSolver(BaseModel):
         initialize_computed_fields(values: Dict[str, any]) -> Dict[str, any]:
             Initializes computed fields like the heuristic function, problem type (SATProblem, TWLSATProblem, or TrueTWLSATProblem),
             and validates parameters.
-        unit_propagation() -> Tuple[bool, int, int]:
+        _unit_propagation() -> Tuple[bool, int, int]:
             Performs unit propagation on the current formula to simplify the problem.
-        choose_literal() -> int:
+        _unit_propagation_loop() -> Tuple[Optional[bool], Optional[List[int]]]:
+            Performs unit propagation loop to simplify the formula and track assignments for backtracking.
+        _choose_decision_literal() -> int:
             Chooses a literal for branching (currently a placeholder for future implementation).
-        log_step(decision_literal: Optional[int] = None, implied_literal: Optional[int] = None, explanation: str = "") -> None:
-            Logs the current state during the DPLL decision process.
+        _make_decision(decision_literal: int, var: int, first_branch: bool) -> None:
+            Assigns a literal to the formula and updates the satisfaction map.
+        _undo_assignments(decision_literal: int, var: int, propagated_literals: List[int]) -> None:
+            Undoes the assignment of the decision literal and any propagated literals.
         _dpll_recursive() -> bool:
             Recursively solves the SAT problem using the DPLL algorithm.
         solve() -> bool:
             The main method to solve the SAT problem.
-        print_steps(table_format: bool = True) -> None:
+        print_steps() -> None:
             Prints the logged decision steps in a tabular format.
         get_decision_steps() -> List[dict]:
             Retrieves the logged decision steps from the solving process.
@@ -59,7 +66,7 @@ class DPLLSolver(BaseModel):
     clauses_model: ClausesModel = Field(..., title="The clauses model to be solved.")
     problem: SATProblem = Field(..., title="The SAT problem to be solved.")
     use_logger: bool = Field(default=False, title="Whether to log steps during the solving process.")
-    steps: List[dict] = Field(default_factory=list, title="A list of dictionaries to log the steps of the solving process.")
+    step_logger: StepLogger = Field(default_factory=StepLogger, title="A logger to track the solving process.")
     decision_level: int = Field(default=0, title="The current decision depth level.")
     heuristic: Literal['default', 'dlcs', 'dlis', 'rdlcs', 'rdlis', 'moms', 'rmoms'] = Field(default="default", description="Branching heuristic to use.")
     heuristic_function: Callable = Field(default=default_heuristic, title="The branching heuristic function used to select decision literals.")
@@ -125,9 +132,13 @@ class DPLLSolver(BaseModel):
         elif values.get('true_twl'):
             values['heuristic_name'] += ' true_twl'
 
+        # Initialize the step logger if logging is enabled
+        if values.get('use_logger'):
+            values['step_logger'] = StepLogger()
+
         return values
     
-    def unit_propagation(self) -> Tuple[bool, int, int]: 
+    def _unit_propagation(self) -> Tuple[bool, int, int]: 
         """
         Perform unit propagation (also known as Boolean Constraint Propagation - BCP):
         - If a clause becomes a unit clause (only one unassigned literal), assign that literal.
@@ -148,61 +159,77 @@ class DPLLSolver(BaseModel):
                 return True, unit_literal, i
         return False, None, None  # No unit clause found
 
-    def choose_literal(self) -> int:
+    def _unit_propagation_loop(self) -> Tuple[Optional[bool], Optional[List[int]]]:
         """
-        Choose a literal from the formula for branching.
+        Perform unit propagation loop to simplify the formula and track assignments for backtracking.
+
+        Returns:
+            tuple: (Optional[bool], Optional[List[int]]) -
+                - True if the formula is satisfiable, False if unsatisfiable, None if no conclusion.
+                - A list of propagated literals to backtrack if needed.
+        """
+        # Unit propagation loop - log each step and track assignments for backtracking
+        propagated_literals: List[int] = []  # Store implied literals to backtrack them later
+        while True:
+            propagation_occurred, implied_literal, affected_clause = self._unit_propagation()
+            if not propagation_occurred:
+                return None, propagated_literals
+            propagated_literals.append(implied_literal)  # Track each implied literal
+            self.problem.update_satisfaction_map(operation='new assignment', literal_to_assign=implied_literal) # Update satisfaction map
+            if self.use_logger:
+                self.step_logger.log_step(problem=self.problem, decision_level= self.decision_level, implied_literal=implied_literal, explanation="BCP " + str(affected_clause))
+            if self.problem.is_satisfied():
+                return True, None
+            if self.problem.is_unsatisfiable():
+                # Backtrack unit propagation assignments if a conflict is found
+                for lit in propagated_literals:
+                    del self.problem.assignments[abs(lit)]
+                self.problem.update_satisfaction_map(operation='undo assignment', literals_to_unassign=propagated_literals)
+                return False, None   
+
+    def _choose_decision_literal(self) -> Tuple[int, int]:
+        """
+        Choose a literal from the formula for branching based on the branching heuristic and increment the decision level.
         
         Returns:
-            int: The literal to branch on.
+            tuple: (int, int) - The decision literal and its absolute value.
         """
-        # Literal selection logic to be implemented here.
-        pass
-
-    def log_step(self, decision_literal: Optional[int] = None, implied_literal : Optional[int] = None, explanation: str = "") -> None:
+        decision_literal = self.heuristic_function(self.problem)
+        abs_value = abs(decision_literal)
+        self.decision_level += 1  # Increment decision level
+        return decision_literal, abs_value 
+    
+    def _make_decision(self, decision_literal: int, abs_value: int, first_branch: bool) -> None:
         """
-        Log the current state in the DPLL decision process, including key details like:
-        - Partial assignments
-        - Satisfied, contradicted, unit, and pending clauses
-        - Decision and implied literals
+        Make a decision by assigning a literal to the formula and updating the satisfaction map.
 
         Args:
-            decision_literal (int): The decision literal at the current step.
-            implied_literal (int): The implied literal from unit propagation.
-            explanation (str): A textual explanation of the current action.
+            decision_literal (int): The literal to assign.
+            var (int): The absolute value of the literal.
         """
-        # Partial assignment
-        partial_assignment = "{" + ", ".join(str(var if value else -var) for var, value in self.problem.assignments.items()) + "}"
-        
-        # Satisfied clauses, Contradicted clauses, Unit clauses and Pending clauses
-        satisfied_clauses = []
-        contradicted_clauses = []
-        unit_clauses = []
-        pending_clauses = []
-        for i, clause in enumerate(self.problem.clauses):
-            if self.problem.satisfaction_map[i]:
-                satisfied_clauses.append(i)
-                continue
-            else:
-                length = self.problem.num_of_unassigned_literals_in_clause[i] 
-                if length == 0:
-                    contradicted_clauses.append(i)
-                elif length == 1:
-                    unit_clauses.append(i)
-                else:
-                    pending_clauses.append(i)
-        # Log entry
-        self.steps.append({
-            "Decision Level": self.decision_level,
-            "Partial Assignment": partial_assignment,
-            "Decision Literal": decision_literal,
-            "Implied Literal": implied_literal,
-            "Satisfied Clauses": satisfied_clauses,
-            "Contradicted Clauses": contradicted_clauses,
-            "Unit Clauses": unit_clauses,
-            "Pending Clauses": pending_clauses,
-            "Explanation": explanation
-        })
+        self.problem.assignments[abs_value] = True if decision_literal > 0 else False
+        if first_branch:
+            self.problem.update_satisfaction_map(operation='new assignment', literal_to_assign=decision_literal)
+        else:
+            self.problem.update_satisfaction_map(operation='change assignment', literal_to_assign=decision_literal)
+        if self.use_logger:
+            self.step_logger.log_step(problem=self.problem, decision_level= self.decision_level, decision_literal=(decision_literal), explanation="INC_DL " + self.heuristic_name)
+    
+    def _undo_assignments(self, decision_literal: int, abs_value: int, propagated_literals: List[int]) -> None:
+        """
+        Undo the assignment of the decision literal and any propagated literals.
 
+        Args:
+            decision_literal (int): The literal to unassign.
+            var (int): The absolute value of the literal.
+            propagated_literals (List[int]): The list of literals to unassign.
+        """
+        del self.problem.assignments[abs_value]
+        for lit in propagated_literals:
+            del self.problem.assignments[abs(lit)]
+        affected_literals = [-decision_literal] + propagated_literals
+        self.problem.update_satisfaction_map(operation='undo assignment', literals_to_unassign=affected_literals)
+    
     def _dpll_recursive(self) -> bool:
         """
         Recursive implementation of the DPLL algorithm with optional detailed logging.
@@ -216,55 +243,28 @@ class DPLLSolver(BaseModel):
         if self.problem.is_unsatisfiable():
             return False
 
-        # Unit propagation loop - log each step and track assignments for backtracking
-        propagated_literals = []  # Store implied literals to backtrack them later
-        while True:
-            propagation_occurred, implied_literal, affected_clause = self.unit_propagation()
-            if not propagation_occurred:
-                break
-            propagated_literals.append(implied_literal)  # Track each implied literal
-            self.problem.update_satisfaction_map(operation='new assignment', literal_to_assign=implied_literal) # Update satisfaction map
-            if self.use_logger:
-                self.log_step(implied_literal=implied_literal, explanation="BCP " + str(affected_clause))
-            if self.problem.is_satisfied():
-                return True
-            if self.problem.is_unsatisfiable():
-                # Backtrack unit propagation assignments if a conflict is found
-                for lit in propagated_literals:
-                    del self.problem.assignments[abs(lit)]
-                self.problem.update_satisfaction_map(operation='undo assignment', literals_to_unassign=propagated_literals)
-                return False
+        # Unit propagation 
+        BCP_result, propagated_literals = self._unit_propagation_loop()
+        if BCP_result is not None:
+            return BCP_result
 
         # Call the heuristic function to choose the decision literal and increment the decision level
-        decision_literal = self.heuristic_function(self.problem)
-        if not decision_literal:
-            return self.problem.is_satisfied()
-        var = abs(decision_literal)
-        self.decision_level += 1  # Increment decision level
+        decision_literal, abs_value = self._choose_decision_literal()
 
         # Try assigning True to the literal
-        self.problem.assignments[var] = True if decision_literal > 0 else False
-        self.problem.update_satisfaction_map(operation='new assignment', literal_to_assign=decision_literal)
-        if self.use_logger:
-            self.log_step(decision_literal=(decision_literal), explanation="INC_DL " + self.heuristic_name)
+        self._make_decision(decision_literal, abs_value, first_branch=True)
         if self._dpll_recursive():
             return True
 
         # Backtrack and try assigning False
-        self.problem.assignments[var] = False if decision_literal > 0 else True
-        self.problem.update_satisfaction_map(operation='change assignment', literal_to_assign=-decision_literal)
-        if self.use_logger:    
-            self.log_step(decision_literal=(-decision_literal), explanation="INC_DL " + self.heuristic_name)
+        self._make_decision(-decision_literal, abs_value, first_branch=False)
         if self._dpll_recursive():
             return True
 
-        # Undo assignment and backtrack decision level if both branches fail
-        del self.problem.assignments[var]
-        for lit in propagated_literals:
-            del self.problem.assignments[abs(lit)]
-        affected_literals = [-decision_literal] + propagated_literals
+        # Undo assignments and backtrack decision level if both branches fail
+        self._undo_assignments(decision_literal, abs_value, propagated_literals)
         self.decision_level -= 1
-        self.problem.update_satisfaction_map(operation='undo assignment', literals_to_unassign=affected_literals)
+
         return False
     
     def solve(self) -> bool:
@@ -277,36 +277,11 @@ class DPLLSolver(BaseModel):
         satisfiable = self._dpll_recursive()
         return satisfiable
     
-    def print_steps(self, table_format: bool = True) -> None:
+    def print_steps(self) -> None:
         """
-        Print the logged decision steps, optionally in a tabular format.
-
-        Args:
-            table_format (bool): Whether to print the steps in a table format. Defaults to True.
+        Print the logged decision steps.
         """
-        if table_format:
-            # Print header row and title
-            print("\nDecision Table:")
-            header = [
-                "DL", "Partial Assignment", "DLit", "IL",
-                "Satisfied Clauses", "Contradicted Clauses", "Unit Clauses", "Pending Clauses", "Explanation"
-            ]
-            print("{:<3} {:<25} {:<5} {:<5} {:<25} {:<20} {:<25} {:<25} {:<20}".format(*header))
-
-            # Print each step in a single row
-            for step in self.steps:
-                row = [
-                    step["Decision Level"],
-                    step["Partial Assignment"],
-                    str(step["Decision Literal"]),
-                    str(step["Implied Literal"]),
-                    str(step["Satisfied Clauses"]),
-                    str(step["Contradicted Clauses"]),
-                    str(step["Unit Clauses"]),
-                    str(step["Pending Clauses"]),
-                    step["Explanation"]
-                ]
-                print("{:<3} {:<25} {:<5} {:<5} {:<25} {:<20} {:<25} {:<25} {:<20}".format(*row))
+        self.step_logger.print_steps()
 
     def get_decision_steps(self) -> List[dict]:
         """
@@ -315,4 +290,4 @@ class DPLLSolver(BaseModel):
         Returns:
             list: A list of dictionaries, where each dictionary represents a logged step.
         """
-        return self.steps
+        return self.step_logger.steps

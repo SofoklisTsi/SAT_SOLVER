@@ -1,4 +1,5 @@
-from sat_solver.Solver.dpll_solver import DPLLSolver
+from sat_solver.Solvers.dpll_solver import DPLLSolver
+from sat_solver.Solvers.cdcl_solver import CDCLSolver
 from sat_solver.DIMACS_Reader.clause_reader import ClauseReader
 from sat_solver.DIMACS_Reader.clauses_model import ClausesModel
 
@@ -13,6 +14,7 @@ print(f"Number of Clauses: {clauses_model.num_clauses}")
 
 # Initialize SATProblem with the clauses and DPLL solver with the clauses model instance.
 solver = DPLLSolver(clauses_model=clauses_model, use_logger=True, heuristic='default', true_twl=False)
+# solver = CDCLSolver(clauses_model=clauses_model, use_logger=True, heuristic='default', twl=False)
 
 # Solve the problem.
 is_satisfiable = solver.solve() 

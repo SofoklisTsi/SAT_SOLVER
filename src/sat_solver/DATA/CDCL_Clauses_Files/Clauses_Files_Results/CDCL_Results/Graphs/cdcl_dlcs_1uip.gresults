@@ -1,0 +1,23 @@
+{
+    "heuristic": "dlcs",
+    "cut": "1UIP",
+    "steps": [
+        {
+            'Decision Level': 1, 
+            'Decision Literal': -1, 
+            'Implied Literal': None, 
+            'Implication Graph': {'DL': 1, 'Ante': None}, 
+            'Learned Clause': None, 
+            'Backtrack Level': None, 
+            'Cut Method': '1UIP'
+        }, 
+        {
+            'Decision Level': 1, 
+            'Decision Literal': None, 
+            'Implied Literal': 2, 
+            'Implication Graph': {'DL': 1, 'Ante': 0}, 
+            'Learned Clause': None, 
+            'Backtrack Level': None, 
+            'Cut Method': '1UIP'}
+    ]
+}

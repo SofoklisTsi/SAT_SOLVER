@@ -57,6 +57,8 @@ class SATProblem(BaseModel):
             Update clause satisfaction when a literal is unassigned.
         update_satisfaction_map(operation, literal_to_assign=None, literals_to_unassign=None):
             Update the satisfaction map based on a specified operation.
+        add_clause(clause):
+            Add a new clause to the SAT problem.
         get_contradicited_clauses():
             Get the set of contradicted clauses.
         get_unitary_clauses():
@@ -232,6 +234,39 @@ class SATProblem(BaseModel):
         elif operation == 'change assignment':
             self._old_literal_unassigned(-literal_to_assign)
             self._new_literal_assigned(literal_to_assign) 
+
+    def add_clause(self, clause: List[int]) -> None:
+        """
+        Add a new clause to the SAT problem.
+        do extra controls if the addition of the clause takes place after the initialization of the SATProblem.
+
+        Args:
+            clause (List[int]): The clause to add.
+        """
+        self.clauses.append(clause)
+        self.number_of_clauses += 1
+        satisfied = False
+        number_of_assigned_literals_that_satisfy_the_clause = 0
+        number_of_unassigned_literals_in_clause = 0
+
+        for lit in clause:
+            if lit not in self.clauses_by_literal:
+                self.clauses_by_literal[lit] = []
+            self.clauses_by_literal[lit].append(self.number_of_clauses - 1)
+            if abs(lit) in self.assignments:
+                if self.assignments[abs(lit)] and lit>0:
+                    number_of_assigned_literals_that_satisfy_the_clause += 1
+                    satisfied = True
+            else:
+                number_of_unassigned_literals_in_clause += 1
+
+        self.satisfaction_map.append(satisfied)
+        self.num_of_assigned_literals_that_satisfy_a_clause.append(number_of_assigned_literals_that_satisfy_the_clause)
+        self.num_of_unassigned_literals_in_clause.append(number_of_unassigned_literals_in_clause)
+        if number_of_unassigned_literals_in_clause == 0 and not satisfied:
+            self.contradicted_clauses.add(self.number_of_clauses - 1)
+        elif number_of_unassigned_literals_in_clause == 1 and not satisfied:
+            self.unitary_clauses.add(self.number_of_clauses - 1)
 
     def get_contradicited_clauses(self) -> Set[int]:
         """

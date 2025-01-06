@@ -1,0 +1,28 @@
+{
+    "heuristic": "dlis",
+    "cut": "1UIP",
+    "steps": [
+        {
+            'Decision Level': 1, 
+            'Partial Assignment': '{-1}', 
+            'Decision Literal': -1, 
+            'Implied Literal': None, 
+            'Satisfied Clauses': [2, 3, 4, 5, 6], 
+            'Contradicted Clauses': [], 
+            'Unit Clauses': [0], 
+            'Pending Clauses': [1], 
+            'Explanation': 'INC_DL dlis'
+        }, 
+        {
+            'Decision Level': 1, 
+            'Partial Assignment': '{-1, 2}', 
+            'Decision Literal': None, 
+            'Implied Literal': 2, 
+            'Satisfied Clauses': [0, 1, 2, 3, 4, 5, 6], 
+            'Contradicted Clauses': [], 
+            'Unit Clauses': [], 
+            'Pending Clauses': [], 
+            'Explanation': 'BCP 0'
+        }
+    ]
+}
