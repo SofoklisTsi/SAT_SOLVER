@@ -117,16 +117,6 @@ This project is an implementation of a SAT (Boolean Satisfiability) solver using
 - **SATProblem Changes**: A new method, add_clauses, has been added to the SATProblem class to enable the dynamic addition of clauses. This change ensures proper compatibility with the CDCL solver.
 - **Code Refactoring**: Significant improvements have been made to the DPLL solver codebase to enhance readability and maintainability. Large blocks of logic have been broken down into smaller, more manageable methods.
 
-### Phase 4.0: CDCL Basic
-- **CDCL Solver**: The first version of the CDCL algorithm has been implemented. This version is compatible with all available heuristics but does not yet support the Two Watched Literal scheme or its variation, TrueTWL. It exclusively uses the 1UIP (First Unique Implication Point) cutting method.
-- **Loggers Folder**: The logging functionality, previously embedded within the DPLLSolver class, has been modularized into its own set of classes. These loggers are now shared between the DPLL and CDCL solvers.
-- **CDCL Logger**: A new specialized logger for the CDCL solver has been introduced. It tracks the implication graph, which is critical for understanding and debugging the solver's decision-making process.
-- **Data Folder**: A new directory has been added to organize test cases and test results for the CDCL solver. This folder ensures proper tracking and versioning of test data.
-- **DPLL Version Tester**: The existing version tester has been renamed for clarity, reflecting its specialization for testing the DPLL solver.
-- **CDCL Version Tester**: A new testing framework specifically designed to validate the functionality of the CDCL solver. It supports automated testing of various heuristics and configurations.
-- **SATProblem Changes**: A new method, add_clauses, has been added to the SATProblem class to enable the dynamic addition of clauses. This change ensures proper compatibility with the CDCL solver.
-- **Code Refactoring**: Significant improvements have been made to the DPLL solver codebase to enhance readability and maintainability. Large blocks of logic have been broken down into smaller, more manageable methods.
-
 ### Phase 4.1: CDCL FULL, Test Data Change, and Code Refactoring
 - **Full TWL/TrueTWL Compatibility**: The CDCL solver has been upgraded to fully support the Two Watched Literals (TWL) and True Two Watched Literals (TrueTWL) optimizations. These enhancements improve solver efficiency and expand compatibility with various problem-solving scenarios.
 - **Enhanced Test Data**: The results directories now include JSON files containing detailed logger outputs for each test problem. These outputs capture the solver's behavior under different heuristics and optimizations, providing a transparent view of its decision-making process.
@@ -205,18 +195,27 @@ This project is an implementation of a SAT (Boolean Satisfiability) solver using
    ```bash
     poetry shell  # Activates the Poetry environment
     cd src/sat_solver
-    pytest -v testers/version_tester.py  # Run tests
-    pytest -v -s testers/version_tester.py  # Include logger output during test runs
+    pytest -v Testers/dpll_version_test.py  # Run tests
+    pytest -v -s Testers/dpll_version_test.py  # Include logger output during test runs
+    exit # Exits the Poetry environment
+   ```
+
+   Run all available tests for both solvers:
+   ```bash
+    poetry shell  # Activates the Poetry environment
+    cd src/sat_solver
+    pytest
+    pytest -v # To view the list of tests
     exit # Exits the Poetry environment
    ```
 
 5. **Performance Testing**:
-   To test the solver's performance, use the test_SATLIB.py script. This will profile the solver's execution using cProfile, which can then be visualized with SnakeViz. To do so, run the following commands:
+   To test the solver's performance, use the run_SATLIB.py script. This will profile the solver's execution using cProfile, which can then be visualized with SnakeViz. To do so, run the following commands:
    ```bash
     poetry shell  # Activates the Poetry environment
     cd src/sat_solver
-    pypy testers/test_SATLIB.py # Execute tests with PyPy for performance comparison
-    snakeviz testers/profile_output.prof  # This opens a visualization of the profiling data
+    pypy Usage_Examples/run_SATLIB.py # Execute tests with PyPy for performance comparison
+    snakeviz Usage_Examples/profile_output.prof  # This opens a visualization of the profiling data
     exit # Exits the Poetry environment
    ```
 
