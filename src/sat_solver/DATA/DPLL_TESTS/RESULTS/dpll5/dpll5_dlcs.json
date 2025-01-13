@@ -1,0 +1,80 @@
+{
+    "steps": [
+        {
+            "Decision Level": 1,
+            "Partial Assignment": "{1}",
+            "Decision Literal": 1,
+            "Implied Literal": null,
+            "Satisfied Clauses": [
+                0,
+                2
+            ],
+            "Contradicted Clauses": [],
+            "Unit Clauses": [
+                3
+            ],
+            "Pending Clauses": [
+                1,
+                4,
+                5
+            ],
+            "Explanation": "INC_DL dlcs"
+        },
+        {
+            "Decision Level": 1,
+            "Partial Assignment": "{1, 2}",
+            "Decision Literal": null,
+            "Implied Literal": 2,
+            "Satisfied Clauses": [
+                0,
+                2,
+                3
+            ],
+            "Contradicted Clauses": [],
+            "Unit Clauses": [],
+            "Pending Clauses": [
+                1,
+                4,
+                5
+            ],
+            "Explanation": "BCP 3"
+        },
+        {
+            "Decision Level": 2,
+            "Partial Assignment": "{1, 2, 4}",
+            "Decision Literal": 4,
+            "Implied Literal": null,
+            "Satisfied Clauses": [
+                0,
+                2,
+                3,
+                4,
+                5
+            ],
+            "Contradicted Clauses": [],
+            "Unit Clauses": [
+                1
+            ],
+            "Pending Clauses": [],
+            "Explanation": "INC_DL dlcs"
+        },
+        {
+            "Decision Level": 2,
+            "Partial Assignment": "{1, 2, 4, -3}",
+            "Decision Literal": null,
+            "Implied Literal": -3,
+            "Satisfied Clauses": [
+                0,
+                1,
+                2,
+                3,
+                4,
+                5
+            ],
+            "Contradicted Clauses": [],
+            "Unit Clauses": [],
+            "Pending Clauses": [],
+            "Explanation": "BCP 1"
+        }
+    ]
+}

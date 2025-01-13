@@ -254,7 +254,7 @@ class SATProblem(BaseModel):
                 self.clauses_by_literal[lit] = []
             self.clauses_by_literal[lit].append(self.number_of_clauses - 1)
             if abs(lit) in self.assignments:
-                if self.assignments[abs(lit)] and lit>0:
+                if self.assignments[abs(lit)] == lit>0:
                     number_of_assigned_literals_that_satisfy_the_clause += 1
                     satisfied = True
             else:

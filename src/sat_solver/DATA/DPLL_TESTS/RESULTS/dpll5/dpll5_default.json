@@ -1,0 +1,100 @@
+{
+    "steps": [
+        {
+            "Decision Level": 1,
+            "Partial Assignment": "{1}",
+            "Decision Literal": 1,
+            "Implied Literal": null,
+            "Satisfied Clauses": [
+                0,
+                2
+            ],
+            "Contradicted Clauses": [],
+            "Unit Clauses": [
+                3
+            ],
+            "Pending Clauses": [
+                1,
+                4,
+                5
+            ],
+            "Explanation": "INC_DL default"
+        },
+        {
+            "Decision Level": 1,
+            "Partial Assignment": "{1, 2}",
+            "Decision Literal": null,
+            "Implied Literal": 2,
+            "Satisfied Clauses": [
+                0,
+                2,
+                3
+            ],
+            "Contradicted Clauses": [],
+            "Unit Clauses": [],
+            "Pending Clauses": [
+                1,
+                4,
+                5
+            ],
+            "Explanation": "BCP 3"
+        },
+        {
+            "Decision Level": 2,
+            "Partial Assignment": "{1, 2, 3}",
+            "Decision Literal": 3,
+            "Implied Literal": null,
+            "Satisfied Clauses": [
+                0,
+                2,
+                3,
+                4
+            ],
+            "Contradicted Clauses": [],
+            "Unit Clauses": [
+                1
+            ],
+            "Pending Clauses": [
+                5
+            ],
+            "Explanation": "INC_DL default"
+        },
+        {
+            "Decision Level": 2,
+            "Partial Assignment": "{1, 2, 3, -4}",
+            "Decision Literal": null,
+            "Implied Literal": -4,
+            "Satisfied Clauses": [
+                0,
+                1,
+                2,
+                3,
+                4
+            ],
+            "Contradicted Clauses": [],
+            "Unit Clauses": [
+                5
+            ],
+            "Pending Clauses": [],
+            "Explanation": "BCP 1"
+        },
+        {
+            "Decision Level": 2,
+            "Partial Assignment": "{1, 2, 3, -4, -5}",
+            "Decision Literal": null,
+            "Implied Literal": -5,
+            "Satisfied Clauses": [
+                0,
+                1,
+                2,
+                3,
+                4,
+                5
+            ],
+            "Contradicted Clauses": [],
+            "Unit Clauses": [],
+            "Pending Clauses": [],
+            "Explanation": "BCP 5"
+        }
+    ]
+}

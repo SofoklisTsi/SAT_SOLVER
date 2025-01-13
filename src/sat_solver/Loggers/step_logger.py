@@ -18,6 +18,7 @@ class StepLogger(BaseModel):
     Methods:
         log_step(problem, decision_level, decision_literal, implied_literal, explanation): Log the current state in the DPLL decision process.
         print_steps(table_format): Print the logged decision steps, optionally in a tabular format.
+        create_json_file(directory, filename): Create a JSON file containing the logged decision steps.
     """
     steps: List[Dict[str, Any]] = Field(default_factory=list, title="List of steps logged during the solving process.")
 
@@ -98,3 +99,33 @@ class StepLogger(BaseModel):
                     step["Explanation"]
                 ]
                 print("{:<3} {:<25} {:<5} {:<5} {:<25} {:<20} {:<25} {:<25} {:<20}".format(*row))
+
+    def create_json_file(self, directory: str, filename: str) -> None:
+        """
+        Create a JSON file containing the logged decision steps.
+
+        Args:
+            directory (str): The directory where the JSON file will be saved.
+            filename (str): The name of the JSON file.
+        """
+        import os
+        import json
+
+        # Ensure the directory exists
+        # os.makedirs(directory, exist_ok=True)
+
+        # Construct the full file path
+        file_path = os.path.join(directory, filename)
+
+        # Prepare the JSON content
+        json_content = {
+            "steps": self.steps
+        }
+
+        # Write to the JSON file
+        try:
+            with open(file_path, "w", encoding="utf-8") as json_file:
+                json.dump(json_content, json_file, indent=4)
+            print(f"JSON file created successfully at: {file_path}")
+        except Exception as e:
+            print(f"Failed to create JSON file at {file_path}. Error: {e}")

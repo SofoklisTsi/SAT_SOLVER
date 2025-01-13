@@ -1,0 +1,104 @@
+{
+    "steps": [
+        {
+            "Decision Level": 1,
+            "Partial Assignment": "{-3}",
+            "Decision Literal": -3,
+            "Implied Literal": null,
+            "Satisfied Clauses": [
+                1,
+                2,
+                4,
+                7,
+                10,
+                11
+            ],
+            "Contradicted Clauses": [],
+            "Unit Clauses": [
+                0
+            ],
+            "Pending Clauses": [
+                3,
+                5,
+                6,
+                8,
+                9
+            ],
+            "Explanation": "INC_DL moms"
+        },
+        {
+            "Decision Level": 1,
+            "Partial Assignment": "{-3, 4}",
+            "Decision Literal": null,
+            "Implied Literal": 4,
+            "Satisfied Clauses": [
+                0,
+                1,
+                2,
+                3,
+                4,
+                6,
+                7,
+                10,
+                11
+            ],
+            "Contradicted Clauses": [],
+            "Unit Clauses": [],
+            "Pending Clauses": [
+                5,
+                8,
+                9
+            ],
+            "Explanation": "BCP 0"
+        },
+        {
+            "Decision Level": 2,
+            "Partial Assignment": "{-3, 4, -1}",
+            "Decision Literal": -1,
+            "Implied Literal": null,
+            "Satisfied Clauses": [
+                0,
+                1,
+                2,
+                3,
+                4,
+                6,
+                7,
+                8,
+                9,
+                10,
+                11
+            ],
+            "Contradicted Clauses": [],
+            "Unit Clauses": [
+                5
+            ],
+            "Pending Clauses": [],
+            "Explanation": "INC_DL moms"
+        },
+        {
+            "Decision Level": 2,
+            "Partial Assignment": "{-3, 4, -1, 2}",
+            "Decision Literal": null,
+            "Implied Literal": 2,
+            "Satisfied Clauses": [
+                0,
+                1,
+                2,
+                3,
+                4,
+                5,
+                6,
+                7,
+                8,
+                9,
+                10,
+                11
+            ],
+            "Contradicted Clauses": [],
+            "Unit Clauses": [],
+            "Pending Clauses": [],
+            "Explanation": "BCP 5"
+        }
+    ]
+}

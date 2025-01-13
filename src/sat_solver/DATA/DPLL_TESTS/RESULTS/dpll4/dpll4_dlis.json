@@ -1,0 +1,33 @@
+{
+    "steps": [
+        {
+            "Decision Level": 1,
+            "Partial Assignment": "{1}",
+            "Decision Literal": 1,
+            "Implied Literal": null,
+            "Satisfied Clauses": [
+                0
+            ],
+            "Contradicted Clauses": [],
+            "Unit Clauses": [],
+            "Pending Clauses": [
+                1
+            ],
+            "Explanation": "INC_DL dlis"
+        },
+        {
+            "Decision Level": 2,
+            "Partial Assignment": "{1, -2}",
+            "Decision Literal": -2,
+            "Implied Literal": null,
+            "Satisfied Clauses": [
+                0,
+                1
+            ],
+            "Contradicted Clauses": [],
+            "Unit Clauses": [],
+            "Pending Clauses": [],
+            "Explanation": "INC_DL dlis"
+        }
+    ]
+}

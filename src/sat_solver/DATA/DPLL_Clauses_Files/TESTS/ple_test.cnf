@@ -1,6 +1,0 @@
-c pure literal elimination check
-p cnf 4 4
-1 3 0
--2 3 0
-2 4 0
--4 0      

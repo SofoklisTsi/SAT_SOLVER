@@ -1,4 +1,6 @@
 """
+cdcl_solver.py
+
 This module implements the Conflict-Driven Clause Learning (CDCL) SAT solver algorithm,
 building upon the DPLL algorithm. CDCL enhances the base DPLL by adding:
 - Conflict analysis and clause learning for resolving conflicts.
@@ -8,7 +10,7 @@ building upon the DPLL algorithm. CDCL enhances the base DPLL by adding:
 from pydantic import Field
 from typing import Dict, List, Optional, Tuple, Literal
 from .dpll_solver import DPLLSolver
-from sat_solver.Loggers.cdcl_logger import CDCLLogger
+from sat_solver.Loggers.graph_step_logger import GraphStepLogger
 
 class CDCLSolver(DPLLSolver):
     """
@@ -20,7 +22,7 @@ class CDCLSolver(DPLLSolver):
      Attributes:
         implication_graph (Dict[int, Dict[str, Optional[int]]): Tracks implications and decision levels.
         learned_clauses (List[List[int]]): List of learned clauses during the solving process.
-        cdcl_logger (CDCLLogger): Logger for the CDCL solving process.
+        graph_step_logger (GraphStepLogger): Logger for the CDCL solving process.
         cutting_method (str): The method used to cut the learned clause (e.g., 1UIP, LUIP).
 
     Inherited Attributes from DPLLSolver:
@@ -71,7 +73,7 @@ class CDCLSolver(DPLLSolver):
 
     implication_graph: Dict[int, Dict[str, Optional[int]]] = Field(default_factory=dict, title="Tracks implications and decision levels.")
     learned_clauses: List[List[int]] = Field(default_factory=list, title="List of learned clauses during the solving process.")
-    cdcl_logger: CDCLLogger = Field(default_factory=CDCLLogger, title="Logger for the CDCL solving process.") 
+    graph_step_logger: GraphStepLogger = Field(default_factory=GraphStepLogger, title="Logger for the CDCL solving process.") 
     cutting_method: Literal['1UIP', 'LUIP'] = Field(default="1UIP", description="The method used to cut the learned clause (e.g., 1UIP, LUIP).")
     
     def _unit_propagation_loop(self) -> Optional[List[int]]:
@@ -95,12 +97,15 @@ class CDCLSolver(DPLLSolver):
             self.problem.update_satisfaction_map(operation='new assignment', literal_to_assign=implied_literal) # Update satisfaction map
             if self.use_logger:
                 self.step_logger.log_step(problem=self.problem, decision_level= self.decision_level, implied_literal=implied_literal, explanation="BCP " + str(affected_clause))
-                self.cdcl_logger.log_graph(decision_level=self.decision_level, decision_literal=None, implied_literal=implied_literal, implication_graph=self.implication_graph.copy(), learned_clause=None, cut_method="1UIP")
+                self.graph_step_logger.log_step(decision_level=self.decision_level, decision_literal=None, implied_literal=implied_literal, implication_graph=self.implication_graph.copy(), learned_clause=None, cutting_method="1UIP")
 
             # Check for conflicts
             if self.problem.is_unsatisfiable():
                 contradicted_clauses = self.problem.get_contradicited_clauses().copy().pop()
-                return self.problem.clauses[contradicted_clauses]
+                if (not self.twl) and (not self.true_twl): 
+                    return self.problem.clauses[contradicted_clauses]
+                else:
+                    return self.problem.original_clauses[contradicted_clauses]
         return None
 
     def _analyze_conflict(self, conflict_clause: List[int]) -> Tuple[List[int], int]:
@@ -115,7 +120,7 @@ class CDCLSolver(DPLLSolver):
         """
         learned_clause = set(conflict_clause)  # Start with the conflict clause
         seen = set()
-        decision_level_literals = []
+        decision_level_literals: List[int] = []
 
         # Traverse the implication graph to find 1-UIP
         for literal in conflict_clause:
@@ -126,7 +131,17 @@ class CDCLSolver(DPLLSolver):
         # Ensure 1-UIP
         while len(decision_level_literals) > 1:
             lit_to_remove = decision_level_literals.pop()
-            antecedent_clause = set(self.problem.clauses[self.implication_graph[-lit_to_remove]["antecedent"]])
+            if self.implication_graph[-lit_to_remove]["antecedent"] is None:
+                new_decision_level_literals: List[int] = []
+                new_decision_level_literals.append(lit_to_remove)
+                for lit in decision_level_literals:
+                    new_decision_level_literals.append(lit)
+                decision_level_literals = new_decision_level_literals
+                continue
+            if (not self.twl) and (not self.true_twl):
+                antecedent_clause = set(self.problem.clauses[self.implication_graph[-lit_to_remove]["antecedent"]])
+            else:
+                antecedent_clause = set(self.problem.original_clauses[self.implication_graph[-lit_to_remove]["antecedent"]])
             if antecedent_clause is not None:
                 learned_clause.update(antecedent_clause)
                 learned_clause.discard(-lit_to_remove)
@@ -146,7 +161,7 @@ class CDCLSolver(DPLLSolver):
         )
 
         if self.use_logger:
-            self.cdcl_logger.log_graph(decision_level=self.decision_level, implication_graph=self.implication_graph.copy(), learned_clause=list(learned_clause), backtrack_level=backtrack_level, cut_method="1UIP")
+            self.graph_step_logger.log_step(decision_level=self.decision_level, implication_graph=self.implication_graph.copy(), learned_clause=list(learned_clause), backtrack_level=backtrack_level, cutting_method="1UIP")
 
         return list(learned_clause), backtrack_level
 
@@ -180,7 +195,7 @@ class CDCLSolver(DPLLSolver):
         }
         if self.use_logger:
             self.step_logger.log_step(problem=self.problem, decision_level= self.decision_level, decision_literal=(decision_literal), explanation="INC_DL " + self.heuristic_name)
-            self.cdcl_logger.log_graph(decision_level=self.decision_level, decision_literal=decision_literal, implied_literal=None, implication_graph=self.implication_graph.copy(), learned_clause=None, cut_method="1UIP")
+            self.graph_step_logger.log_step(decision_level=self.decision_level, decision_literal=decision_literal, implied_literal=None, implication_graph=self.implication_graph.copy(), learned_clause=None, cutting_method="1UIP")
 
     def solve(self) -> bool:
         """
@@ -196,8 +211,9 @@ class CDCLSolver(DPLLSolver):
                     return False  # Unsatisfiable
                 learned_clause, backtrack_level = self._analyze_conflict(conflict_clause)
                 self.learned_clauses.append(learned_clause)
-                self.problem.add_clause(learned_clause)  # Add learned clause to problem
+                # self.problem.add_clause(learned_clause)  # Add learned clause to problem
                 self._backtrack(backtrack_level)
+                self.problem.add_clause(learned_clause)  # Add learned clause to problem
             elif self.problem.is_satisfied():
                 return True  # Satisfiable
             else:
@@ -207,7 +223,7 @@ class CDCLSolver(DPLLSolver):
         """
         Print the logged implication graph.
         """
-        self.cdcl_logger.print_graph()
+        self.graph_step_logger.print_step()
 
     def get_graph_steps(self) -> List[dict]:
         """
@@ -216,5 +232,5 @@ class CDCLSolver(DPLLSolver):
         Returns:
             List[dict]: The logged implication graph steps.
         """
-        return self.cdcl_logger.cdcl_steps
+        return self.graph_step_logger.steps
     

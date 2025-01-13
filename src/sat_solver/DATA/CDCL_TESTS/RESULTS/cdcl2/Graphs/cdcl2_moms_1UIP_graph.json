@@ -1,0 +1,52 @@
+{
+    "steps": [
+        {
+            "Decision Level": 1,
+            "Decision Literal": -3,
+            "Implied Literal": null,
+            "Implication Graph": {
+                "DL": 1,
+                "Ante": null
+            },
+            "Learned Clause": null,
+            "Backtrack Level": null,
+            "Cut Method": "1UIP"
+        },
+        {
+            "Decision Level": 1,
+            "Decision Literal": null,
+            "Implied Literal": 4,
+            "Implication Graph": {
+                "DL": 1,
+                "Ante": 0
+            },
+            "Learned Clause": null,
+            "Backtrack Level": null,
+            "Cut Method": "1UIP"
+        },
+        {
+            "Decision Level": 2,
+            "Decision Literal": -1,
+            "Implied Literal": null,
+            "Implication Graph": {
+                "DL": 2,
+                "Ante": null
+            },
+            "Learned Clause": null,
+            "Backtrack Level": null,
+            "Cut Method": "1UIP"
+        },
+        {
+            "Decision Level": 2,
+            "Decision Literal": null,
+            "Implied Literal": 2,
+            "Implication Graph": {
+                "DL": 2,
+                "Ante": 5
+            },
+            "Learned Clause": null,
+            "Backtrack Level": null,
+            "Cut Method": "1UIP"
+        }
+    ]
+}

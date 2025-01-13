@@ -1,0 +1,81 @@
+{
+    "steps": [
+        {
+            "Decision Level": 0,
+            "Partial Assignment": "{4}",
+            "Decision Literal": null,
+            "Implied Literal": 4,
+            "Satisfied Clauses": [
+                0,
+                5
+            ],
+            "Contradicted Clauses": [],
+            "Unit Clauses": [
+                2
+            ],
+            "Pending Clauses": [
+                1,
+                3,
+                4
+            ],
+            "Explanation": "BCP 5"
+        },
+        {
+            "Decision Level": 0,
+            "Partial Assignment": "{4, -3}",
+            "Decision Literal": null,
+            "Implied Literal": -3,
+            "Satisfied Clauses": [
+                0,
+                2,
+                5
+            ],
+            "Contradicted Clauses": [],
+            "Unit Clauses": [
+                3,
+                4
+            ],
+            "Pending Clauses": [
+                1
+            ],
+            "Explanation": "BCP 2"
+        },
+        {
+            "Decision Level": 0,
+            "Partial Assignment": "{4, -3, -1}",
+            "Decision Literal": null,
+            "Implied Literal": -1,
+            "Satisfied Clauses": [
+                0,
+                2,
+                3,
+                5
+            ],
+            "Contradicted Clauses": [],
+            "Unit Clauses": [
+                1,
+                4
+            ],
+            "Pending Clauses": [],
+            "Explanation": "BCP 3"
+        },
+        {
+            "Decision Level": 0,
+            "Partial Assignment": "{4, -3, -1, 2}",
+            "Decision Literal": null,
+            "Implied Literal": 2,
+            "Satisfied Clauses": [
+                0,
+                1,
+                2,
+                3,
+                4,
+                5
+            ],
+            "Contradicted Clauses": [],
+            "Unit Clauses": [],
+            "Pending Clauses": [],
+            "Explanation": "BCP 4"
+        }
+    ]
+}
