@@ -129,7 +129,7 @@ This project is an implementation of a SAT (Boolean Satisfiability) solver using
 - Python 3.10 (in order to be compatioble with PyPy)
 - [Git](https://git-scm.com/) for version control
 - [PyPy 3.10](https://www.pypy.org/) for enhanced performance (recommended).
-- [Poetry](https://python-poetry.org/) for dependency and environment management.
+- [Poetry 1.8.4](https://python-poetry.org/) for dependency and environment management.
 
 ## Setup
 
