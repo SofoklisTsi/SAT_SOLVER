@@ -18,10 +18,11 @@ Dependencies:
     - `Pydantic`: Provides robust data validation and parsing features.
 """
 
-from typing import List, Dict, Set
-from pydantic import Field, model_validator
+from typing import List, Dict
+from pydantic import ConfigDict, Field, model_validator
 from sat_solver.SATProblems.sat_problem import SATProblem
 from sat_solver.DIMACS_Reader.clauses_model import ClausesModel
+from ordered_set import OrderedSet
 
 class TrueTWLSATProblem(SATProblem):
     """
@@ -41,8 +42,8 @@ class TrueTWLSATProblem(SATProblem):
         num_of_unassigned_literals_in_clause (List[int]): Tracks the count of unassigned literals in each clause.
         assignments (Dict[int, bool]): Current variable assignments.
         satisfaction_map (List[bool]): Indicates whether each clause is currently satisfied.
-        contradicted_clauses (Set[int]): Set of contradicted clause indices.
-        unitary_clauses (Set[int]): Set of unitary clause indices.
+        contradicted_clauses (OrderedSet[int]): Set of contradicted clause indices.
+        unitary_clauses (OrderedSet[int]): Set of unitary clause indices.
     
     Methods:
         _initialize_watched_literals(satisfaction_map, assignments):
@@ -72,17 +73,8 @@ class TrueTWLSATProblem(SATProblem):
     """
 
     original_clauses: List[List[int]] = Field(..., description="List of the original clauses, each containing literals")
-    # clauses_model: ClausesModel = Field(..., description="The clauses model containing the initial problem setup")
-    # clauses: List[List[int]] = Field(..., description="List of clauses, each containing literals")
-    # number_of_clauses: int = Field(..., description="Number of clauses in the SAT problem")
-    # number_of_variables: int = Field(..., description="Number of variables in the SAT problem")
-    # assignments: Dict[int, bool] = Field(default_factory=dict, description="Assignments of literals")
-    # satisfaction_map: List[bool] = Field(default_factory=list, description="Satisfaction map of clauses")
-    # clauses_by_literal: Dict[int, List[int]] = Field(default_factory=dict, description="Clauses indexed by literals")
-    # num_of_assigned_literals_that_satisfy_a_clause: List[int] = Field(default_factory=list, description="Count of assigned literals that satisfy each clause")
-    # num_of_unassigned_literals_in_clause: List[int] = Field(default_factory=list, description="Count of unassigned literals in each clause")
-    # contradicted_clauses: Set[int] = Field(default_factory=set, description="Set of unsatisfied clauses")
-    # unitary_clauses: Set[int] = Field(default_factory=set, description="Set of unitary clauses")
+
+    model_config = ConfigDict(arbitrary_types_allowed=True)
 
     @model_validator(mode="before")
     @classmethod
@@ -130,7 +122,7 @@ class TrueTWLSATProblem(SATProblem):
         values["unitary_clauses"] = cls._initial_unit_clauses_check(clauses_with_twl)
         # Initialize empty assignments and contradicted clauses       
         values["assignments"] = {}
-        values["contradicted_clauses"] = set()
+        values["contradicted_clauses"] = OrderedSet()
         
         return values
 

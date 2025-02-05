@@ -124,6 +124,10 @@ This project is an implementation of a SAT (Boolean Satisfiability) solver using
 - **Usage_Examples Directory**: A new directory has been introduced to separate solver testers from user-facing usage examples. It contains two illustrative examples demonstrating how to integrate and use the solver in real-world scenarios.
 - **Comprehensive Code Refactoring**: Extensive updates were made to the CDCL solver’s codebase to resolve bugs encountered during the integration of TWL and TrueTWL optimizations. These refinements also improve code readability, maintainability, and overall robustness.
 
+### Phase 4.1.1: Compatibility with CPython
+- **OrderedSet for CPython Compatibility**: Replaced standard Python sets with OrderedSet to maintain compatibility with CPython while ensuring deterministic behavior in clause ordering.
+- **Dependency Management Update**: Added ordered-set as a required package in pyproject.toml to facilitate compatibility across different Python implementations.
+
 ## Requirements
 
 - Python 3.10 (in order to be compatioble with PyPy)

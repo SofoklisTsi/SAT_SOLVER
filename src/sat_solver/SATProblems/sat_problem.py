@@ -15,9 +15,10 @@ Dependencies:
     - `Pydantic`: Provides robust data validation and parsing features.
 """
 
-from typing import List, Dict, Set, Optional
-from pydantic import BaseModel, Field, model_validator
+from typing import List, Dict, Optional
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 from sat_solver.DIMACS_Reader.clauses_model import ClausesModel
+from ordered_set import OrderedSet
 
 class SATProblem(BaseModel):
     """
@@ -43,8 +44,8 @@ class SATProblem(BaseModel):
             corresponds to the number of assigned literals satisfying the respective clause.
         num_of_unassigned_literals_in_clause (List[int]): A list where each index corresponds to 
             the number of unassigned literals remaining in the respective clause.
-        contradicted_clauses (Set[int]): The set of contradicted clauses.
-        unitary_clauses (Set[int]): The set of unitary clauses.
+        contradicted_clauses (OrderedSet[int]): The set of contradicted clauses.
+        unitary_clauses (OrderedSet[int]): The set of unitary clauses.
 
     Methods:
         _build_clauses_by_literal(clauses):
@@ -78,8 +79,10 @@ class SATProblem(BaseModel):
     clauses_by_literal: Dict[int, List[int]] = Field(default_factory=dict, description="Clauses indexed by literals")
     num_of_assigned_literals_that_satisfy_a_clause: List[int] = Field(default_factory=list, description="Count of assigned literals that satisfy each clause")
     num_of_unassigned_literals_in_clause: List[int] = Field(default_factory=list, description="Count of unassigned literals in each clause")
-    contradicted_clauses: Set[int] = Field(default_factory=set, description="Set of unsatisfied clauses")
-    unitary_clauses: Set[int] = Field(default_factory=set, description="Set of unitary clauses")
+    contradicted_clauses: OrderedSet[int] = Field(default_factory=OrderedSet, description="Set of unsatisfied clauses")
+    unitary_clauses: OrderedSet[int] = Field(default_factory=OrderedSet, description="Set of unitary clauses")
+
+    model_config = ConfigDict(arbitrary_types_allowed=True)
 
     @model_validator(mode="before")
     @classmethod
@@ -122,7 +125,7 @@ class SATProblem(BaseModel):
         values["unitary_clauses"] = cls._initial_unit_clauses_check(clauses)
         # Initialize empty assignments and contradicted clauses
         values["assignments"] = {}
-        values["contradicted_clauses"] = set()
+        values["contradicted_clauses"] = OrderedSet()
 
         return values
 
@@ -147,7 +150,7 @@ class SATProblem(BaseModel):
         return clauses_by_literal
 
     @classmethod
-    def _initial_unit_clauses_check(cls, clauses: List[List[int]]) -> Set[int]:
+    def _initial_unit_clauses_check(cls, clauses: List[List[int]]) -> OrderedSet[int]:
         """
         Check for unit clauses in the initial clauses.
 
@@ -155,9 +158,9 @@ class SATProblem(BaseModel):
             clauses (List[List[int]]): The list of clauses.
 
         Returns:
-            set: The set of indices of unit clauses.
+            OrderedSet: The set of indices of unit clauses.
         """
-        unitary_clauses = set()
+        unitary_clauses = OrderedSet()
         for i, clause in enumerate(clauses):
             if len(clause) == 1:
                 unitary_clauses.add(i)
@@ -268,21 +271,21 @@ class SATProblem(BaseModel):
         elif number_of_unassigned_literals_in_clause == 1 and not satisfied:
             self.unitary_clauses.add(self.number_of_clauses - 1)
 
-    def get_contradicited_clauses(self) -> Set[int]:
+    def get_contradicited_clauses(self) -> OrderedSet[int]:
         """
         Get the set of contradicted clauses.
 
         Returns:
-            set: The set of indices of contradicted clauses.
+            OrderedSet: The set of indices of contradicted clauses.
         """
         return self.contradicted_clauses
     
-    def get_unitary_clauses(self) -> Set[int]:
+    def get_unitary_clauses(self) -> OrderedSet[int]:
         """
         Get the set of unitary clauses.
 
         Returns:
-            set: The set of indices of unitary clauses.
+            OrderedSet: The set of indices of unitary clauses.
         """
         return self.unitary_clauses
     

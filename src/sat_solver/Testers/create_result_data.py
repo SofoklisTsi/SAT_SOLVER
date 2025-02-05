@@ -6,7 +6,7 @@ def create_dpll_results_files(cnf_filename: str, twl: bool = False, true_twl: bo
     solver_type = "DPLL"
     heuristics = ["default", "dlcs", "dlis", "moms"]
     cnf_file_path = f"../sat_solver/DATA/{solver_type}_TESTS/TESTS/{cnf_filename}.cnf"
-    results_directory_path = f"../sat_solver/DATA/{solver_type}_TESTS/Results/{cnf_filename}/"
+    results_directory_path = f"../sat_solver/DATA/{solver_type}_TESTS/RESULTS/{cnf_filename}/"
     
     for heuristic in heuristics:
         results_filename = f"{cnf_filename}_{heuristic}.json"
@@ -21,7 +21,7 @@ def create_cdcl_results_files(cnf_filename: str, twl: bool = False, true_twl: bo
     # cutting_methods = ["1UIP", "LUIP"]
     cutting_methods = ["1UIP"]
     cnf_file_path = f"../sat_solver/DATA/{solver_type}_TESTS/TESTS/{cnf_filename}.cnf"
-    results_directory_path = f"../sat_solver/DATA/{solver_type}_TESTS/Results/{cnf_filename}/"
+    results_directory_path = f"../sat_solver/DATA/{solver_type}_TESTS/RESULTS/{cnf_filename}/"
     graph_directory_path = f"{results_directory_path}Graphs/"
     
     for heuristic in heuristics:

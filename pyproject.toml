@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "sat-solver"
-version = "1.0.0"
+version = "4.1.1"
 description = "Implementation of SAT problem-solver algorithms under business requirements"
 authors = ["Sofoklis Tsiakalos"]
 license = "MIT"
@@ -10,6 +10,7 @@ readme = "README.md"
 # Define the main dependencies
 python = "^3.10"
 pydantic = "^2.10.2"
+ordered-set = "^4.1.0"
 
 [tool.poetry.group.dev.dependencies]
 # Define development dependencies (testing and profiling tools)
