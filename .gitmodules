@@ -1,0 +1,3 @@
+[submodule "src/sat_solver/RESEARCH"]
+	path = src/sat_solver/RESEARCH
+	url = git@github.com:SofoklisTsi/SAT_SOLVER_RESEARCH.git
