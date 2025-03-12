@@ -19,4 +19,5 @@ venv/
 old_*.py
 
 # Research files 
-RESEARCH/
+# RESEARCH/
+RESEARCHa/
