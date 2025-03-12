@@ -15,8 +15,8 @@ venv/
 *.prof
 .pytest_cache/
 
-# Extra files and Full dataset
-multi_SATLIB_solver.py
-SATLIB_Full/
-run.py
+# Old files
 old_*.py
+
+# Research files 
+RESEARCH/
