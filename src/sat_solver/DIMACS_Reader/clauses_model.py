@@ -10,6 +10,13 @@ Dependencies:
 
 from typing import List
 from pydantic import BaseModel, Field, field_validator
+import warnings
+
+def custom_warning_format(message, category, filename, lineno, line=None):
+    return f"\033[93m{category.__name__} at {filename}:{lineno}:\n{message}\n\033[0m"
+
+warnings.simplefilter("always", UserWarning)
+warnings.formatwarning = custom_warning_format
 
 class ClausesModel(BaseModel):
     """
@@ -90,12 +97,23 @@ class ClausesModel(BaseModel):
 
         Raises:
             ValueError: If the number of unique literals does not match the declared variable count.
+            Warning: If the number of declared variables is lower than the count of unique literals.
         """
         clauses = info.data.get('clauses')
         if 'clauses':
             unique_literals = set(abs(lit) for clause in clauses for lit in clause)
-            if len(unique_literals) != num_vars:
-                raise ValueError("Number of unique literals does not match the declared number of variables.")
+            actual_num_vars = len(unique_literals)
+
+            if actual_num_vars > num_vars:
+                raise ValueError("Number of unique literals exceeds the declared number of variables.")
+            
+            if actual_num_vars < num_vars:
+                missing_vars = sorted(set(range(1, num_vars + 1)) - unique_literals)
+                warnings.warn(
+                    f"Warning: Declared number of variables ({num_vars}) is lower than the actual count ({actual_num_vars}). "
+                    f"Missing {num_vars - actual_num_vars} variables: {missing_vars} ",
+                    UserWarning
+                )
         return num_vars
 
 
