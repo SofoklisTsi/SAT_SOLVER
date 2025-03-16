@@ -119,7 +119,7 @@ class CDCLSolver(DPLLSolver):
             Tuple[List[int], int]: The learned clause and the backtrack level.
         """
         learned_clause = set(conflict_clause)  # Start with the conflict clause
-        seen = set()
+        seen_literals = set()  # Track seen literals to avoid infinite loops
         decision_level_literals: List[int] = []
 
         # Traverse the implication graph to find 1-UIP
@@ -140,12 +140,17 @@ class CDCLSolver(DPLLSolver):
                 continue
             if (not self.twl) and (not self.true_twl):
                 antecedent_clause = set(self.problem.clauses[self.implication_graph[-lit_to_remove]["antecedent"]])
+                # keep only the literals that are not in seen_literals
+                antecedent_clause = {lit for lit in antecedent_clause if abs(lit) not in seen_literals}
             else:
                 antecedent_clause = set(self.problem.original_clauses[self.implication_graph[-lit_to_remove]["antecedent"]])
+                # keep only the literals that are not in seen_literals
+                antecedent_clause = {lit for lit in antecedent_clause if abs(lit) not in seen_literals}
             if antecedent_clause is not None:
                 learned_clause.update(antecedent_clause)
                 learned_clause.discard(-lit_to_remove)
                 learned_clause.discard(lit_to_remove)
+                seen_literals.add(abs(lit_to_remove))
 
             # Update decision level literals
             decision_level_literals = [
