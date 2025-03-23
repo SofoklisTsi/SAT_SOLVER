@@ -20,3 +20,6 @@ old_*.py
 
 # Research files 
 RESEARCH/
+
+# Currently working refactoring files
+*_new.py

@@ -216,7 +216,6 @@ class CDCLSolver(DPLLSolver):
                     return False  # Unsatisfiable
                 learned_clause, backtrack_level = self._analyze_conflict(conflict_clause)
                 self.learned_clauses.append(learned_clause)
-                # self.problem.add_clause(learned_clause)  # Add learned clause to problem
                 self._backtrack(backtrack_level)
                 self.problem.add_clause(learned_clause)  # Add learned clause to problem
             elif self.problem.is_satisfied():

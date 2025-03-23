@@ -53,6 +53,8 @@ class TWLSATProblem(SATProblem):
             Updates satisfaction state and watched literals when a literal is assigned.
         _old_literal_unassigned(unassigned_literal):
             Updates satisfaction state and watched literals when a literal is unassigned.
+        add_clause(clause):
+            Adds a new clause to the SAT problem, updating the satisfaction map and watched literals.
 
     Inherited Methods from SATProblem:
         _build_clauses_by_literal(clauses):
